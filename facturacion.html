@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facturación - San Choclito</title>
+    <!-- Cargamos primero el estilo base y luego el tuyo del módulo 4 -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles4.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="brand">
+            <span class="brand-text">Facturación y Cierre</span>
+        </div>
+        <nav>
+            <ul class="nav-links">
+                 <li><a href="index.html" class="nav-btn">Home</a></li>
+                 <li><a href="platos.html" class="nav-btn">Platos</a></li>
+                 <li><a href="pedidos.html" class="nav-btn">Pedidos</a></li>
+                 <li><a href="cocina.html" class="nav-btn">Cocina</a></li>
+                 <!-- Solo aquí agregamos la palabra active -->
+                <li><a href="facturacion.html" class="nav-btn active">Facturación</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- El toldito que va justo debajo de la navegación -->
+    <div class="toldo-container"></div>
+
+    <main class="container">
+        <section class="billing-card">
+            <h2 class="section-title">Generar Comprobante</h2>
+            
+            <div class="search-box">
+                <label for="mesa-input">Seleccionar Mesa:</label>
+                <div class="input-group">
+                    <input type="number" id="mesa-input" placeholder="Ej: 3" min="1">
+                    <button id="btn-buscar-pedidos" class="btn-primary">Buscar Pedidos</button>
+                </div>
+            </div>
+
+            <!-- Resumen de Consumo (Se activa al buscar) -->
+            <div id="resumen-consumo" class="hidden">
+                <h3>Detalle de la Mesa</h3>
+                <table class="billing-table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Plato</th>
+                            <th>Cant.</th>
+                            <th>P. Unit</th>
+                            <th>Subtotal</th>
+                            <th>Obs.</th>
+                            <th>Mozo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-pedidos-body">
+                    </tbody>
+                </table>
+
+                <div class="billing-summary">
+                    <div class="calc-row">
+                        <span>Subtotal General:</span>
+                        <span id="txt-subtotal">S/ 0.00</span>
+                    </div>
+                    <!-- AGREGAR ESTA LÍNEA AQUÍ -->
+                     <div class="calc-row">
+                        <span>IGV (18%):</span>
+                        <span id="txt-igv">S/ 0.00</span>
+                    </div>
+                    
+                    <div class="calc-row">
+                        <label for="input-descuento">Descuento (S/):</label>
+                        <input type="number" id="input-descuento" value="0" min="0">
+                    </div>
+
+                    <div id="row-justificacion" class="calc-row hidden">
+                        <label>Justificación:</label>
+                        <textarea id="txt-justificacion" placeholder="Mínimo 10 caracteres"></textarea>
+                    </div>
+
+                    <div class="calc-row total-row">
+                        <span>TOTAL FINAL:</span>
+                        <span id="txt-total">S/ 0.00</span>
+                    </div>
+                </div>
+
+                <div class="payment-method">
+                    <h3>Método de Pago</h3>
+                    <select id="select-metodo">
+                        <option value="">Seleccione...</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Yape">Yape</option>
+                        <option value="Plin">Plin</option>
+                        <option value="Transferencia">Transferencia</option>
+                    </select>
+
+                    <div id="efectivo-details" class="hidden">
+                        <div class="calc-row">
+                            <label>Monto Recibido:</label>
+                            <input type="number" id="monto-recibido">
+                        </div>
+                        <div class="calc-row">
+                            <span>Vuelto:</span>
+                            <span id="txt-vuelto">S/ 0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn-confirmar-pago" class="btn-confirm">Confirmar Pago</button>
+            </div>
+        </section>
+
+        <section class="history-section">
+            <h2 class="section-title">Facturas Recientes</h2>
+            <div id="lista-facturas" class="factura-grid">
+                <!-- Aquí se verán las facturas guardadas -->
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2026 San Choclito | Parcial de Desarrollo Web - Ciclo 2026-1</p>
+    </footer>
+
+    <script src="script4.js"></script>
+</body>
+</html>

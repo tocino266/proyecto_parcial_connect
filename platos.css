@@ -1,0 +1,321 @@
+/* ============================
+   Módulo 1: Gestión de Platos
+   ============================ */
+
+/* Contenedor principal del módulo */
+.modulo-container {
+    flex: 1;
+    padding: 2rem 3rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.modulo-titulo {
+    color: var(--color-verde-oscuro);
+    margin-bottom: 2rem;
+    text-align: center;
+    font-size: 2.2rem;
+    text-shadow: 1px 1px 0px var(--color-crema);
+}
+
+/* Layout en grilla: Formulario a la izquierda, Tabla a la derecha */
+.modulo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.8fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+/* Tarjetas de sección */
+.form-section, .table-section {
+    background-color: var(--color-blanco);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: var(--sombra-suave);
+}
+
+.form-section h3, .table-section h3 {
+    margin-bottom: 1.5rem;
+    color: var(--color-verde-oscuro);
+    border-bottom: 2px solid var(--color-crema);
+    padding-bottom: 0.8rem;
+    font-size: 1.4rem;
+}
+
+/* ============================
+   Estilos del Formulario
+   ============================ */
+.form-group {
+    margin-bottom: 1.2rem;
+}
+
+.form-group-row {
+    display: flex;
+    gap: 1rem;
+}
+
+.form-group-row .form-group {
+    flex: 1;
+    margin-bottom: 1.2rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-marron);
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+    width: 100%;
+    padding: 0.7rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background-color: #fafafa;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--color-verde-claro);
+    background-color: var(--color-blanco);
+    box-shadow: 0 0 0 3px rgba(132, 169, 104, 0.2);
+}
+
+textarea {
+    resize: vertical;
+}
+
+/* Mensajes de error para las validaciones */
+.error-msg {
+    color: #e74c3c;
+    font-size: 0.8rem;
+    display: block;
+    margin-top: 0.3rem;
+    font-weight: 500;
+    min-height: 1.2rem; /* Mantiene el espacio aunque esté vacío */
+}
+
+/* Estilos para los Alérgenos (Checkboxes) */
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.8rem;
+    padding: 0.5rem 0;
+}
+
+.checkbox-group label {
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.checkbox-group input[type="checkbox"] {
+    accent-color: var(--color-verde-oscuro);
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+}
+
+/* Botones del formulario */
+.btn-submit {
+    background-color: var(--color-verde-oscuro);
+    color: var(--color-blanco);
+    border: none;
+    padding: 0.9rem 1.5rem;
+    width: 100%;
+    border-radius: 6px;
+    font-size: 1.05rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: var(--transicion);
+    margin-top: 1rem;
+    box-shadow: 0 4px 6px rgba(74, 107, 61, 0.2);
+}
+
+.btn-submit:hover {
+    background-color: var(--color-marron);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(93, 64, 55, 0.3);
+}
+
+.btn-cancelar {
+    background-color: #e74c3c;
+    color: var(--color-blanco);
+    border: none;
+    padding: 0.9rem 1.5rem;
+    width: 100%;
+    border-radius: 6px;
+    font-size: 1.05rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: var(--transicion);
+    margin-top: 0.8rem;
+}
+
+.btn-cancelar:hover {
+    background-color: #c0392b;
+}
+
+/* Clases de utilidad */
+.oculto {
+    display: none !important;
+}
+
+/* ============================
+   Estilos de la Tabla y Filtros
+   ============================ */
+.filtros-container {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.filtros-container input,
+.filtros-container select {
+    flex: 1;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #eaeaea;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--color-blanco);
+}
+
+th, td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #eaeaea;
+    font-size: 0.95rem;
+}
+
+th {
+    background-color: var(--color-crema);
+    color: var(--color-verde-oscuro);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+tbody tr:hover {
+    background-color: #fcfcfc;
+}
+
+/* Estilos para los botones de acción en la tabla */
+.btn-accion {
+    padding: 0.4rem 0.8rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-right: 0.5rem;
+    transition: background-color 0.2s ease;
+}
+
+.btn-editar {
+    background-color: var(--color-maiz);
+    color: var(--color-marron);
+}
+
+.btn-editar:hover {
+    background-color: #e5c02a;
+}
+
+.btn-estado {
+    background-color: var(--color-verde-claro);
+    color: var(--color-blanco);
+}
+
+.btn-estado:hover {
+    background-color: var(--color-verde-oscuro);
+}
+
+.btn-eliminar {
+    background-color: #f5b7b1;
+    color: #c0392b;
+}
+
+.btn-eliminar:hover {
+    background-color: #e74c3c;
+    color: var(--color-blanco);
+}
+
+/* Badges de Estado */
+.badge {
+    padding: 0.3rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-align: center;
+    display: inline-block;
+}
+
+.badge.activo {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.badge.inactivo {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* ============================
+   Responsividad
+   ============================ */
+@media (max-width: 1024px) {
+    .modulo-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filtros-container {
+        flex-direction: column;
+    }
+    
+    .modulo-container {
+        padding: 1.5rem;
+    }
+}
+/* ============================
+   Ajustes Visuales de la Tabla
+   ============================ */
+
+/* 1. Evitar que el texto del Precio se parta en dos líneas */
+td:nth-child(4) {
+    white-space: nowrap;
+}
+
+/* 2. Organizar los botones de la columna Acciones */
+td:last-child {
+    display: flex;
+    gap: 0.5rem; /* Espaciado uniforme entre botones */
+    flex-wrap: wrap; 
+    align-items: center;
+    min-width: 220px; /* Ancho mínimo para que respiren los botones */
+}
+
+/* Limpiar el margen antiguo de los botones */
+.btn-accion {
+    margin-right: 0; 
+}

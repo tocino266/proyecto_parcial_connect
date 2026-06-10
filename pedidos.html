@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>San Choclito – Pedidos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <!-- Usamos SOLO el style2 de tu compañero -->
+  <link rel="stylesheet" href="style2.css">
+</head>
+
+<body>
+
+<!-- ═══════════════════════════ NAVBAR (Del Módulo 1) ═══════════════════════════ -->
+<header class="navbar">
+    <div class="brand">
+        <span class="brand-text">Panel de Control</span>
+    </div>
+    <nav>
+        <ul class="nav-links">
+            <li><a href="index.html" class="nav-btn">Home</a></li>
+            <li><a href="platos.html" class="nav-btn">Platos</a></li>
+            <li><a href="pedidos.html" class="nav-btn active">Pedidos</a></li>
+            <li><a href="cocina.html" class="nav-btn">Cocina</a></li>
+            <li><a href="facturacion.html" class="nav-btn">Facturación</a></li>
+        </ul>
+    </nav>
+</header>
+
+<!-- ═══════════════════════════ MAIN (El original de tu compañero) ═══════════════════════════ -->
+<div class="page">
+
+  <div class="page-header">
+    <h1>Registro de Pedidos</h1>
+    <p>Gestiona los pedidos por mesa · San Choclito Restaurante</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('nuevo',this)">＋ Nuevo Pedido</button>
+    <button class="tab-btn" onclick="switchTab('lista',this)">📋 Lista de Pedidos</button>
+  </div>
+
+  <!-- ─── TAB: NUEVO PEDIDO ─── -->
+  <div id="tab-nuevo">
+    <div class="card">
+      <div class="card-title"><span class="icon">🧾</span> Datos del Pedido</div>
+
+      <div class="form-grid">
+        <!-- Código pedido -->
+        <div class="field">
+          <label>Código del Pedido</label>
+          <input type="text" id="codPedido" readonly/>
+          <span class="hint">Generado automáticamente</span>
+        </div>
+        <!-- Fecha hora -->
+        <div class="field">
+          <label>Fecha y Hora</label>
+          <input type="text" id="fechaHora" readonly/>
+        </div>
+        <!-- Mozo -->
+        <div class="field">
+          <label>Nombre / Código del Mozo <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="mozo" placeholder="Ej: Ana Torres o MZ002" maxlength="60"/>
+          <span class="error-msg" id="err-mozo">Ingresa el nombre o código del mozo (mín. 3 caracteres).</span>
+        </div>
+        <!-- Mesa -->
+        <div class="field">
+          <label>Número de Mesa <span style="color:var(--danger)">*</span></label>
+          <input type="number" id="numMesa" placeholder="1 – 50" min="1" max="50"/>
+          <span class="error-msg" id="err-mesa">Ingresa un número de mesa válido (1–50).</span>
+        </div>
+
+        <!-- Prioridad -->
+        <div class="field full">
+          <label>Nivel de Prioridad <span style="color:var(--danger)">*</span></label>
+          <div class="priority-group">
+            <button type="button" class="priority-pill" data-val="Normal"  onclick="setPriority(this)">🟢 Normal</button>
+            <button type="button" class="priority-pill" data-val="Alta"    onclick="setPriority(this)">🟠 Alta</button>
+            <button type="button" class="priority-pill" data-val="Urgente" onclick="setPriority(this)">🔴 Urgente</button>
+          </div>
+          <span class="error-msg" id="err-prioridad">Selecciona un nivel de prioridad.</span>
+        </div>
+
+        <!-- Justificación urgente -->
+        <div class="field full" id="justificacionWrap" style="display:none">
+          <label>Justificación (Urgente) <span style="color:var(--danger)">*</span></label>
+          <textarea id="justificacion" placeholder="Explica el motivo de urgencia (mín. 10 caracteres)..." maxlength="300"></textarea>
+          <span class="error-msg" id="err-justificacion">La justificación es obligatoria y debe tener al menos 10 caracteres.</span>
+        </div>
+      </div>
+
+      <!-- PLATOS -->
+      <div style="margin-top:1.6rem;">
+        <div class="card-title" style="font-size:1.05rem;margin-bottom:1rem;"><span class="icon">🍽️</span> Selección de Platos</div>
+        <div class="dishes-panel">
+          <div class="dish-add-row">
+            <div class="field" style="flex:2;">
+              <label>Plato Activo</label>
+              <select id="selectPlato">
+                <option value="">-- Selecciona un plato --</option>
+              </select>
+            </div>
+            <div class="field" style="flex:.7;min-width:90px;">
+              <label>Cantidad</label>
+              <input type="number" id="cantPlato" value="1" min="1" max="99"/>
+            </div>
+            <div class="field" style="flex:1.5;">
+              <label>Observación especial</label>
+              <input type="text" id="obsPlato" placeholder="Ej: Sin cebolla" maxlength="150"/>
+            </div>
+            <button class="btn-add" onclick="agregarPlato()">+ Agregar</button>
+          </div>
+          <span class="error-msg" id="err-platos" style="display:none;margin-top:.5rem;font-size:.78rem;color:var(--danger);">Agrega al menos un plato al pedido.</span>
+
+          <div class="dish-list" id="dishList">
+            <p class="empty-dish" id="emptyDish">No hay platos en este pedido aún.</p>
+          </div>
+
+          <div class="dish-total-row" id="totalRow" style="display:none;">
+            <span class="total-label">TOTAL DEL PEDIDO</span>
+            <span id="totalDisplay">S/ 0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="resetForm()">Limpiar</button>
+        <button class="btn btn-primary" onclick="guardarPedido()">💾 Guardar Pedido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB: LISTA ─── -->
+  <div id="tab-lista" style="display:none;">
+    <div class="card">
+      <div class="card-title"><span class="icon">📋</span> Pedidos Registrados</div>
+
+      <div class="filter-bar">
+        <select id="filtroEstado" onchange="renderTabla()">
+          <option value="">Todos los estados</option>
+          <option value="Registrado">Registrado</option>
+          <option value="Enviado a cocina">Enviado a cocina</option>
+          <option value="En preparación">En preparación</option>
+          <option value="Listo para servir">Listo para servir</option>
+          <option value="Entregado">Entregado</option>
+          <option value="Cancelado">Cancelado</option>
+        </select>
+        <select id="filtroPrioridad" onchange="renderTabla()">
+          <option value="">Todas las prioridades</option>
+          <option value="Normal">Normal</option>
+          <option value="Alta">Alta</option>
+          <option value="Urgente">Urgente</option>
+        </select>
+        <input type="number" id="filtroMesa" placeholder="Mesa…" min="1" max="50" style="width:110px;" oninput="renderTabla()"/>
+        <input type="text" id="filtroMozo" placeholder="Mozo…" style="width:150px;" oninput="renderTabla()"/>
+      </div>
+
+      <div class="orders-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Mesa</th>
+              <th>Mozo</th>
+              <th>Fecha / Hora</th>
+              <th>Platos</th>
+              <th>Total</th>
+              <th>Prioridad</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaPedidos"></tbody>
+        </table>
+        <p id="noOrders" style="text-align:center;padding:1.5rem;color:var(--text-soft);display:none;">No hay pedidos que coincidan con los filtros.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ MODAL DETALLE ═══════════════════════════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Detalle del Pedido</h2>
+      <button class="btn-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- Enlace a tu archivo JavaScript -->
+<footer class="main-footer">
+  © 2026 San Choclito | Parcial de Desarrollo Web - Ciclo 2026-1
+</footer>
+<script src="script2.js"></script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+/* ============================
+   Diseño del Toldo
+   ============================ */
+.toldo-container {
+    width: 100%;
+    /* 1. Aumentamos la altura real para que el toldo baje más y se acerque al cuadro */
+    height: 1000px; 
+    background-image: url('toldo.png');
+    background-repeat: no-repeat;
+    /* 2. Forzamos a la imagen a estirarse totalmente para cubrir esos 320px */
+    background-size: 100% 100%; 
+    background-position: top;
+    /* 3. Ajustamos el margen para que la distancia sea mínima y se vea armonioso */
+    margin-bottom: 3.5rem; 
+}
+
+/* ============================
+   Contenedor Principal (CORREGIDO)
+   ============================ */
+.container {
+    max-width: 900px;
+    /* 1. Centrado horizontal: auto */
+    /* 2. El margen superior negativo (-850px) "succiona" el cuadro hacia arriba */
+    /* 3. El margen inferior (3rem) deja espacio al final */
+    margin: -850px auto 3rem auto; 
+    
+    padding: 0 1rem;
+    animation: fadeIn 0.6s ease-out;
+
+    /* 4. IMPORTANTE: Esto hace que el cuadro flote sobre el toldo y no se quede atrás */
+    position: relative;
+    z-index: 10; 
+}
+
+.section-title {
+    color: var(--color-verde-oscuro);
+    border-bottom: 3px solid var(--color-maiz);
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+}
+
+/* Tarjeta Principal */
+.billing-card {
+    background: var(--color-blanco);
+    padding: 2.5rem;
+    border-radius: 15px;
+    box-shadow: var(--sombra-suave);
+    margin-bottom: 2.5rem;
+}
+
+/* Buscador */
+.search-box {
+    background-color: var(--color-crema);
+    padding: 1.5rem;
+    border-radius: 10px;
+    border: 1px solid rgba(74, 107, 61, 0.1);
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+input[type="number"], select, textarea {
+    padding: 0.8rem;
+    border: 1px solid var(--color-verde-claro);
+    border-radius: 8px;
+    outline: none;
+}
+
+/* Tabla de Consumo */
+.billing-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    background: white;
+}
+
+.billing-table th {
+    background-color: var(--color-verde-oscuro);
+    color: var(--color-blanco);
+    padding: 12px;
+    text-align: left;
+}
+
+.billing-table td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Cálculos Finales */
+.billing-summary {
+    background: #fdfbf7;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.calc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.total-row {
+    font-size: 1.6rem;
+    color: var(--color-verde-oscuro);
+    border-top: 2px solid var(--color-maiz);
+    padding-top: 10px;
+    margin-top: 10px;
+}
+
+/* Botones */
+.btn-primary {
+    background: var(--color-verde-oscuro);
+    color: white;
+    border: none;
+    padding: 0 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.btn-confirm {
+    background: #27ae60;
+    color: white;
+    width: 100%;
+    padding: 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 1rem;
+}
+
+.btn-confirm:hover { background: #219150; }
+.btn-primary:hover { background: var(--color-marron); }
+
+.hidden { display: none; }
+
+/* Grid de Facturas */
+.factura-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.factura-item {
+    background: white;
+    padding: 1.2rem;
+    border-radius: 10px;
+    border-top: 4px solid var(--color-verde-oscuro);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+/* Esto obligará al botón de la página actual a quedarse verde */
+.nav-btn.active {
+    background-color: #4b633a !important; /* El verde oscuro de tu marca */
+    color: white !important;
+    font-weight: 500 !important; 
+    /* Opcional: un ajuste fino para que la letra no se vea apretada */
+    letter-spacing: 0.2px;
+}

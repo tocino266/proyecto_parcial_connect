@@ -1,0 +1,277 @@
+/* --- CORRECCIONES PARA ALINEACIÓN GLOBAL --- */
+html {
+    /* Mantener solo overflow-y evita el salto sin desalinear el flexbox */
+    overflow-y: scroll; 
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --color-verde-oscuro: #4A6B3D; 
+    --color-verde-claro: #84A968;
+    --color-crema: #F7F4EB; 
+    --color-maiz: #F4D03F; 
+    --color-marron: #5D4037; 
+    --color-blanco: #FFFFFF;
+    --sombra-suave: 0 4px 15px rgba(74, 107, 61, 0.15);
+    --transicion: all 0.3s ease;
+    
+    /* Colores de Alertas para Cocina */
+    --color-urgente: #e74c3c;
+    --color-alergia: #d35400;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--color-crema);
+    color: var(--color-marron);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* --- 2. BARRA DE NAVEGACIÓN (AJUSTE DE POSICIÓN) --- */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* Ajustado a 3rem en los lados para que "PANEL DE CONTROL" 
+       no se mueva a la izquierda respecto a Pedidos/Platos */
+    padding: 1.5rem 3rem; 
+    background-color: var(--color-blanco);
+    box-shadow: var(--sombra-suave);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    width: 100%;
+    flex-wrap: nowrap; 
+}
+
+.brand-text {
+    font-weight: 700;
+    color: var(--color-verde-oscuro);
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 1px; 
+    white-space: nowrap;
+    /* Eliminado el flex: 0 0 auto que causaba desalineación */
+}
+
+.nav-links {
+    display: flex;
+    /* Mantenemos 2rem pero asegúrate que en el HTML no haya espacios extra */
+    gap: 2rem; 
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-btn {
+    text-decoration: none;
+    color: var(--color-verde-oscuro);
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 25px;
+    transition: var(--transicion);
+    border: 2px solid transparent;
+}
+
+.nav-btn:hover, .nav-btn.active {
+    background-color: var(--color-verde-oscuro);
+    color: var(--color-blanco);
+}
+
+/* --- 3. CONTENEDOR Y TÍTULO (Sincronizado con Platos) --- */
+.modulo-container {
+    flex: 1;
+    padding: 2rem 3rem; /* El 3rem lateral es sagrado para que todo cuadre */
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.modulo-titulo {
+    color: var(--color-verde-oscuro);
+    margin-bottom: 2rem;
+    text-align: center;
+    font-size: 2.2rem;
+    /* Sombra color crema exacta de Platos para que la letra no se vea distinta */
+    text-shadow: 1px 1px 0px var(--color-crema); 
+}
+
+/* Filtros */
+.card-panel {
+    background-color: var(--color-blanco);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: var(--sombra-suave);
+    margin-bottom: 2rem;
+}
+
+.form-group-row { display: flex; gap: 1.5rem; }
+.form-group { flex: 1; }
+label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.95rem; }
+select {
+    width: 100%; padding: 0.7rem; border: 1px solid #d1d5db;
+    border-radius: 6px; font-family: inherit; font-size: 0.95rem;
+    background-color: #fafafa;
+}
+select:focus { outline: none; border-color: var(--color-verde-claro); }
+
+/* GRID DE TICKETS DE COCINA */
+.tickets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.ticket {
+    background: var(--color-blanco);
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-top: 6px solid var(--color-verde-oscuro);
+    transition: var(--transicion);
+}
+
+.ticket:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+
+/* Tickets Urgentes */
+.ticket.prioridad-urgente { border-top-color: var(--color-urgente); }
+.urgente-alerta {
+    background-color: #fdeaea; color: var(--color-urgente);
+    padding: 0.5rem; font-size: 0.85rem; font-weight: bold;
+    text-align: center; border-bottom: 1px solid #fadbd8;
+}
+
+.ticket-header {
+    padding: 1rem;
+    background-color: #fafafa;
+    border-bottom: 1px dashed #ccc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ticket-header h3 { color: var(--color-marron); font-size: 1.2rem; }
+.mesa-badge {
+    background-color: var(--color-maiz); color: var(--color-marron);
+    padding: 0.3rem 0.8rem; border-radius: 20px; font-weight: bold; font-size: 0.9rem;
+}
+
+.ticket-info {
+    padding: 0.8rem 1rem;
+    font-size: 0.85rem;
+    color: #555;
+    background-color: var(--color-blanco);
+    border-bottom: 1px solid #eee;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.ticket-body { padding: 1rem; flex: 1; }
+
+.platos-lista { list-style: none; }
+.plato-item {
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.plato-item:last-child { border-bottom: none; }
+
+.plato-header {
+    display: flex; justify-content: space-between;
+    font-weight: 600; color: var(--color-marron); font-size: 1rem;
+}
+.plato-cant { background: var(--color-verde-oscuro); color: white; padding: 0.1rem 0.5rem; border-radius: 4px; }
+
+.plato-obs { font-size: 0.85rem; color: #555; font-style: italic; margin-top: 0.3rem; }
+.plato-alergenos {
+    font-size: 0.8rem; color: var(--color-alergia); font-weight: bold;
+    margin-top: 0.3rem; display: flex; align-items: center; gap: 0.3rem;
+}
+
+.ticket-footer {
+    padding: 1rem; background-color: #fafafa; border-top: 1px dashed #ccc;
+    display: flex; flex-direction: column; gap: 0.8rem;
+}
+
+/* Botones Cocina */
+.btn-accion {
+    width: 100%; padding: 0.8rem; border: none; border-radius: 6px;
+    font-weight: bold; font-size: 1rem; cursor: pointer; transition: var(--transicion);
+}
+.btn-preparar { background-color: var(--color-maiz); color: var(--color-marron); }
+.btn-preparar:hover { background-color: #e5c02a; }
+
+.btn-listo { background-color: var(--color-verde-claro); color: var(--color-blanco); }
+.btn-listo:hover { background-color: var(--color-verde-oscuro); }
+
+.badge-estado {
+    text-align: center; font-size: 0.85rem; font-weight: bold;
+    padding: 0.3rem; border-radius: 4px;
+}
+.estado-enviado { background-color: #e2e8f0; color: #475569; }
+.estado-preparacion { background-color: #fef08a; color: #854d0e; }
+.estado-listo { background-color: #dcfce7; color: #166534; } 
+
+.oculto { display: none !important; }
+
+.main-footer { text-align: center; padding: 1.5rem; background-color: var(--color-verde-oscuro); color: var(--color-crema); font-size: 0.9rem; }
+
+/* Estilos para el estado individual de platos */
+.plato-control-estado {
+    margin-top: 5px;
+}
+
+.select-plato-estado {
+    width: auto;
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* Colores dinámicos para los platos */
+.select-plato-estado.pendiente { background-color: #f1f5f9; color: #64748b; }
+.select-plato-estado.en-preparación { background-color: #fef9c3; color: #854d0e; border-color: #fde047; }
+.select-plato-estado.listo { background-color: #dcfce7; color: #15803d; border-color: #86efac; }
+
+/* Para que el texto del plato se vea mejor con el select abajo */
+.plato-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* --- AJUSTE PARA QUE SE VEA IGUAL A PLATOS --- */
+/* Solo se activa si la ventana es menor a 1024px */
+@media (max-width: 1024px) {
+    .navbar {
+        flex-direction: column;
+        padding: 1.5rem 1rem;
+        gap: 1rem;
+    }
+
+    .brand-text {
+        text-align: center;
+        width: 100%;
+        font-size: 1.2rem; /* Se mantiene igual que en platos */
+    }
+
+    .nav-links {
+        justify-content: center;
+        width: 100%;
+        gap: 0.8rem;
+    }
+}

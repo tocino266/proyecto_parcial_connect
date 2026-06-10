@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>San Choclito - Tablero de Cocina</title>
+    <link rel="stylesheet" href="styles3.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="brand">
+            <span class="brand-text">Panel de Control</span>
+        </div>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-btn">Home</a></li>
+                <li><a href="platos.html" class="nav-btn">Platos</a></li>
+                <li><a href="pedidos.html" class="nav-btn">Pedidos</a></li>
+                <li><a href="cocina.html" class="nav-btn active">Cocina</a></li>
+                <li><a href="facturacion.html" class="nav-btn">Facturación</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="modulo-container">
+        <h1 class="modulo-titulo">Tablero de Cocina</h1>
+
+        <div class="filtros-container card-panel">
+            <div class="form-group-row">
+                <div class="form-group">
+                    <label for="filtroEstado">Filtrar por Estado:</label>
+                    <select id="filtroEstado">
+                        <option value="todos">Todos los pedidos</option>
+                        <option value="Enviado a cocina">Pendiente</option>
+                        <option value="En preparación">En preparación</option>
+                        <option value="Listo para servir">Listo para servir</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filtroPrioridad">Filtrar por Prioridad:</label>
+                    <select id="filtroPrioridad">
+                        <option value="">Todas las prioridades</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Urgente">Urgente</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="noOrders" class="oculto" style="text-align: center; padding: 3rem; color: var(--color-verde-oscuro);">
+            <h2>¡Excelente trabajo!</h2>
+            <p>No hay pedidos pendientes en cocina en este momento.</p>
+        </div>
+
+        <div id="contenedor-tickets" class="tickets-grid">
+            </div>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2026 San Choclito | Parcial de Desarrollo Web - Ciclo 2026-1</p>
+    </footer>
+
+    <script src="script3.js"></script>
+</body>
+</html>

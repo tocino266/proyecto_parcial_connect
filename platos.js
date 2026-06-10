@@ -1,13 +1,11 @@
 /* =======================================================
-   MÓDULO 1: GESTIÓN DE PLATOS - Lógica de Negocio
+   MÓDULO 1: GESTIÓN DE PLATOS - Integrado con Supabase
    ======================================================= */
 
-// Variables globales del módulo
 let platos = [];
 let modoEdicion = false;
 let codigoEdicionActual = '';
 
-// Elementos del DOM
 const formPlatos = document.getElementById('form-platos');
 const btnGuardar = document.getElementById('btn-guardar');
 const btnCancelar = document.getElementById('btn-cancelar');
@@ -15,19 +13,17 @@ const listaPlatos = document.getElementById('lista-platos');
 const inputBuscar = document.getElementById('buscar-plato');
 const selectFiltroEstado = document.getElementById('filtro-estado');
 
-// Inputs de Alérgenos
 const checksAlergenos = document.querySelectorAll('input[name="alergeno"]');
 const chkNinguno = document.getElementById('alergeno-ninguno');
 const chkOtro = document.getElementById('alergeno-otro');
 const inputAlergenoDetalle = document.getElementById('alergeno-detalle');
 
-// Inicialización cuando carga el DOM
 document.addEventListener('DOMContentLoaded', () => {
-    cargarPlatosDelStorage();
-    renderizarTabla();
+    // 1. Cargar datos desde Supabase al iniciar
+    cargarPlatosDesdeSupabase();
+    
     configurarEventosAlergenos();
     
-    // Event Listeners principales
     formPlatos.addEventListener('submit', manejarSubmit);
     btnCancelar.addEventListener('click', cancelarEdicion);
     inputBuscar.addEventListener('input', filtrarTabla);
@@ -35,40 +31,43 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ==========================================
-   1. LECTURA Y ESCRITURA EN LOCALSTORAGE
+   1. OPERACIONES CON SUPABASE
    ========================================== */
-function cargarPlatosDelStorage() {
-    const datosGuardados = localStorage.getItem('platos');
-    if (datosGuardados) {
-        platos = JSON.parse(datosGuardados);
-    }
-}
+async function cargarPlatosDesdeSupabase() {
+    // Mostrar mensaje de carga opcional
+    listaPlatos.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando platos desde la nube...</td></tr>';
+    
+    const { data, error } = await clienteSupabase
+        .from('platos')
+        .select('*')
+        .order('codigo', { ascending: true });
 
-function guardarPlatosEnStorage() {
-    localStorage.setItem('platos', JSON.stringify(platos));
+    if (error) {
+        console.error("Error al cargar platos:", error);
+        listaPlatos.innerHTML = '<tr><td colspan="6" style="text-align:center; color: red;">Error al conectar con la base de datos.</td></tr>';
+        return;
+    }
+
+    platos = data || [];
+    renderizarTabla();
 }
 
 /* ==========================================
-   2. LÓGICA DE ALÉRGENOS (Interacción Visual)
+   2. LÓGICA DE ALÉRGENOS (Sin cambios)
    ========================================== */
 function configurarEventosAlergenos() {
     checksAlergenos.forEach(chk => {
         chk.addEventListener('change', (e) => {
-            
-            // Regla 1: Si se marca "Ninguno", desmarcar todos los demás
             if (e.target === chkNinguno && chkNinguno.checked) {
                 checksAlergenos.forEach(c => {
                     if (c !== chkNinguno) c.checked = false;
                 });
-            } 
-            // Regla 2: Si se marca cualquier otro (incluido "Otro"), desmarcar "Ninguno"
-            else if (e.target !== chkNinguno && e.target.checked) {
+            } else if (e.target !== chkNinguno && e.target.checked) {
                 chkNinguno.checked = false;
             }
 
-            // Regla 3: Manejo independiente del campo de texto para "Otro"
             if (chkOtro.checked) {
-                inputAlergenoDetalle.classList.remove('oculto'); // Quitamos la clase que bloqueaba
+                inputAlergenoDetalle.classList.remove('oculto');
                 inputAlergenoDetalle.style.display = 'block';
                 inputAlergenoDetalle.required = true;
             } else {
@@ -86,7 +85,6 @@ function obtenerAlergenosSeleccionados() {
     checksAlergenos.forEach(chk => {
         if (chk.checked) {
             if (chk.value === 'Otro') {
-                // Guardamos "Otro: [detalle]"
                 seleccionados.push(`Otro: ${inputAlergenoDetalle.value.trim()}`);
             } else {
                 seleccionados.push(chk.value);
@@ -97,12 +95,11 @@ function obtenerAlergenosSeleccionados() {
 }
 
 /* ==========================================
-   3. MANEJO DEL FORMULARIO Y VALIDACIONES
+   3. MANEJO DEL FORMULARIO (Inserción y Actualización)
    ========================================== */
-function manejarSubmit(e) {
+async function manejarSubmit(e) {
     e.preventDefault();
 
-    // Capturar valores
     const codigo = document.getElementById('codigo').value.trim().toUpperCase();
     const nombre = document.getElementById('nombre').value.trim();
     const descripcion = document.getElementById('descripcion').value.trim();
@@ -113,25 +110,21 @@ function manejarSubmit(e) {
     const modificables = document.getElementById('modificables').value.trim();
     const alergenos = obtenerAlergenosSeleccionados();
 
-    // Limpiar errores previos
     document.getElementById('error-codigo').textContent = '';
     document.getElementById('error-nombre').textContent = '';
     document.getElementById('error-alergenos').textContent = '';
 
-    // Validar: Al menos un alérgeno
     if (alergenos.length === 0) {
         document.getElementById('error-alergenos').textContent = 'Debe seleccionar al menos una opción.';
         return;
     }
 
-    // Validar: Nombre no debe ser solo números[cite: 2]
     const esSoloNumeros = /^[0-9\s]+$/.test(nombre);
     if (esSoloNumeros) {
         document.getElementById('error-nombre').textContent = 'El nombre no puede estar compuesto únicamente por números.';
         return;
     }
 
-    // Validar: Código único (solo en creación)
     if (!modoEdicion) {
         const existeCodigo = platos.some(p => p.codigo === codigo);
         if (existeCodigo) {
@@ -140,35 +133,47 @@ function manejarSubmit(e) {
         }
     }
 
-    // Crear objeto
-    const nuevoPlato = {
-        codigo,
-        nombre,
-        descripcion,
-        categoria,
-        precio,
-        tiempo,
-        estado,
-        alergenos,
-        modificables
+    const platoData = {
+        codigo, nombre, descripcion, categoria, 
+        precio, tiempo, estado, alergenos, modificables
     };
 
-    // Guardar/Actualizar
+    // Bloquear botón mientras guarda
+    btnGuardar.textContent = 'Guardando...';
+    btnGuardar.disabled = true;
+
     if (modoEdicion) {
-        const index = platos.findIndex(p => p.codigo === codigoEdicionActual);
-        if (index !== -1) platos[index] = nuevoPlato;
-        alert('Plato actualizado correctamente.');
+        // ACTUALIZAR EN SUPABASE -> Usando clienteSupabase
+        const { error } = await clienteSupabase
+            .from('platos')
+            .update(platoData)
+            .eq('codigo', codigoEdicionActual);
+
+        if (error) {
+            alert('Error al actualizar en la nube.');
+            console.error(error);
+        } else {
+            alert('Plato actualizado correctamente.');
+        }
     } else {
-        platos.push(nuevoPlato);
-        alert('Plato registrado correctamente.');
+        // INSERTAR EN SUPABASE -> Usando clienteSupabase
+        const { error } = await clienteSupabase
+            .from('platos')
+            .insert([platoData]);
+
+        if (error) {
+            alert('Error al registrar en la nube.');
+            console.error(error);
+        } else {
+            alert('Plato registrado correctamente.');
+        }
     }
 
-    // Persistir y refrescar
-    guardarPlatosEnStorage();
+    btnGuardar.disabled = false;
     cancelarEdicion();
-    renderizarTabla();
+    // Recargar datos frescos de la base de datos
+    await cargarPlatosDesdeSupabase(); 
 }
-
 /* ==========================================
    4. RENDERIZADO DE LA TABLA Y FILTROS
    ========================================== */
@@ -188,7 +193,7 @@ function renderizarTabla(platosAMostrar = platos) {
             <td><strong>${plato.codigo}</strong></td>
             <td>${plato.nombre}</td>
             <td>${plato.categoria}</td>
-            <td>S/ ${plato.precio.toFixed(2)}</td>
+            <td>S/ ${parseFloat(plato.precio).toFixed(2)}</td>
             <td><span class="${badgeClass}">${plato.estado}</span></td>
             <td>
                 <button type="button" class="btn-accion btn-editar" onclick="cargarDatosEdicion('${plato.codigo}')">Editar</button>
@@ -218,7 +223,7 @@ function filtrarTabla() {
 }
 
 /* ==========================================
-   5. ACCIONES DE LA TABLA (CRUD)
+   5. ACCIONES DE LA TABLA (CRUD con Supabase)
    ========================================== */
 function cargarDatosEdicion(codigo) {
     const plato = platos.find(p => p.codigo === codigo);
@@ -227,7 +232,6 @@ function cargarDatosEdicion(codigo) {
     modoEdicion = true;
     codigoEdicionActual = codigo;
 
-    // Rellenar formulario
     document.getElementById('codigo').value = plato.codigo;
     document.getElementById('codigo').disabled = true;
     document.getElementById('nombre').value = plato.nombre;
@@ -238,13 +242,14 @@ function cargarDatosEdicion(codigo) {
     document.getElementById('estado').value = plato.estado;
     document.getElementById('modificables').value = plato.modificables;
 
-    // Resetear alérgenos
     checksAlergenos.forEach(chk => chk.checked = false);
     inputAlergenoDetalle.classList.add('oculto');
     inputAlergenoDetalle.style.display = 'none';
     
-    // Marcar los correspondientes (incluyendo el despliegue de "Otro")
-    plato.alergenos.forEach(alergeno => {
+    // Al venir de Supabase (JSONB), asegúrate de que sea un array
+    const alergenosArray = Array.isArray(plato.alergenos) ? plato.alergenos : JSON.parse(plato.alergenos || '[]');
+
+    alergenosArray.forEach(alergeno => {
         if (alergeno.startsWith('Otro:')) {
             chkOtro.checked = true;
             inputAlergenoDetalle.classList.remove('oculto');
@@ -280,21 +285,40 @@ function cancelarEdicion() {
     btnCancelar.style.display = 'none';
 }
 
-function cambiarEstado(codigo) {
-    const index = platos.findIndex(p => p.codigo === codigo);
-    if (index !== -1) {
-        platos[index].estado = platos[index].estado === 'Activo' ? 'Inactivo' : 'Activo';
-        guardarPlatosEnStorage();
-        renderizarTabla();
-        filtrarTabla(); 
+async function cambiarEstado(codigo) {
+    const plato = platos.find(p => p.codigo === codigo);
+    if (!plato) return;
+
+    const nuevoEstado = plato.estado === 'Activo' ? 'Inactivo' : 'Activo';
+    
+    // Aquí está el cambio: clienteSupabase
+    const { error } = await clienteSupabase
+        .from('platos')
+        .update({ estado: nuevoEstado })
+        .eq('codigo', codigo);
+
+    if (error) {
+        alert('Error al cambiar el estado.');
+        console.error(error);
+    } else {
+        await cargarPlatosDesdeSupabase();
     }
 }
 
-function eliminarPlato(codigo) {
+async function eliminarPlato(codigo) {
     if (confirm(`¿Estás seguro de que deseas eliminar el plato con código ${codigo}?`)) {
-        platos = platos.filter(p => p.codigo !== codigo);
-        guardarPlatosEnStorage();
-        renderizarTabla();
-        filtrarTabla();
+        
+        // Aquí está el cambio: clienteSupabase
+        const { error } = await clienteSupabase
+            .from('platos')
+            .delete()
+            .eq('codigo', codigo);
+
+        if (error) {
+            alert('Error al eliminar el plato.');
+            console.error(error);
+        } else {
+            await cargarPlatosDesdeSupabase();
+        }
     }
 }

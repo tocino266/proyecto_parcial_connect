@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Platos - San Choclito</title>
-    <!-- Estilos globales del grupo -->
     <link rel="stylesheet" href="styles.css">
-    <!-- Estilos específicos de tu módulo -->
     <link rel="stylesheet" href="platos.css">
 </head>
 <body>
-    <!-- NAVEGACIÓN GLOBAL -->
     <header class="navbar">
         <div class="brand">
             <span class="brand-text">Panel de Control</span>
@@ -18,45 +15,44 @@
         <nav>
             <ul class="nav-links">
                 <li><a href="index.html" class="nav-btn">Home</a></li>
-                <li><a href="platos.html" class="nav-btn">Platos</a></li>
+                <li><a href="platos.html" class="nav-btn active">Platos</a></li>
                 <li><a href="pedidos.html" class="nav-btn">Pedidos</a></li>
                 <li><a href="cocina.html" class="nav-btn">Cocina</a></li>
                 <li><a href="facturacion.html" class="nav-btn">Facturación</a></li>
+                <li>
+                    <button type="button" onclick="window.cerrarSesion()" class="nav-btn" style="background-color: #e74c3c; color: white; border: none; cursor: pointer;">
+                        Cerrar Sesión
+                    </button>
+                </li>
             </ul>
         </nav>
     </header>
 
-    <!-- CONTENIDO DEL MÓDULO 1 -->
     <main class="modulo-container">
         <h2 class="modulo-titulo">Gestión de Platos</h2>
         
         <div class="modulo-grid">
-            <!-- SECCIÓN: Formulario de Registro -->
             <section class="form-section">
                 <h3>Registrar Nuevo Plato</h3>
                 
                 <form id="form-platos">
-                    <!-- 1. Código -->
                     <div class="form-group">
                         <label for="codigo">Código del Plato *</label>
                         <input type="text" id="codigo" placeholder="Ej. PL001" minlength="3" required>
                         <span class="error-msg" id="error-codigo"></span>
                     </div>
 
-                    <!-- 2. Nombre -->
                     <div class="form-group">
                         <label for="nombre">Nombre del Plato *</label>
                         <input type="text" id="nombre" minlength="3" maxlength="60" required>
                         <span class="error-msg" id="error-nombre"></span>
                     </div>
 
-                    <!-- 3. Descripción -->
                     <div class="form-group">
                         <label for="descripcion">Descripción *</label>
                         <textarea id="descripcion" rows="3" minlength="10" maxlength="250" placeholder="Breve descripción del plato..." required></textarea>
                     </div>
 
-                    <!-- 4. Categoría -->
                     <div class="form-group">
                         <label for="categoria">Categoría *</label>
                         <select id="categoria" required>
@@ -71,19 +67,16 @@
                     </div>
 
                     <div class="form-group-row">
-                        <!-- 5. Precio -->
                         <div class="form-group">
                             <label for="precio">Precio (S/) *</label>
                             <input type="number" id="precio" step="0.01" min="0.1" max="500" required>
                         </div>
-                        <!-- 6. Tiempo estimado -->
                         <div class="form-group">
                             <label for="tiempo">Tiempo Prep. (min) *</label>
                             <input type="number" id="tiempo" min="1" max="120" required>
                         </div>
                     </div>
 
-                    <!-- 7. Estado -->
                     <div class="form-group">
                         <label for="estado">Estado *</label>
                         <select id="estado" required>
@@ -92,7 +85,6 @@
                         </select>
                     </div>
 
-                    <!-- 8. Alérgenos -->
                     <div class="form-group">
                         <label>Alérgenos *</label>
                         <div class="checkbox-group" id="grupo-alergenos">
@@ -106,12 +98,10 @@
                             <label><input type="checkbox" name="alergeno" value="Frutos secos"> Frutos secos</label>
                             <label><input type="checkbox" name="alergeno" value="Otro" id="alergeno-otro"> Otro</label>
                         </div>
-                        <!-- Campo oculto para detallar otro alérgeno -->
                         <input type="text" id="alergeno-detalle" placeholder="Especifique otro alérgeno..." class="oculto" style="margin-top: 0.5rem; display: none;">
                         <span class="error-msg" id="error-alergenos"></span>
                     </div>
 
-                    <!-- 9. Ingredientes Modificables -->
                     <div class="form-group">
                         <label for="modificables">Ingredientes Modificables *</label>
                         <input type="text" id="modificables" placeholder="Ej. Sin cebolla, sin ají..." maxlength="200" required>
@@ -122,11 +112,9 @@
                 </form>
             </section>
 
-            <!-- SECCIÓN: Tabla de Visualización -->
             <section class="table-section">
                 <h3>Platos Registrados</h3>
                 
-                <!-- Buscador y filtros -->
                 <div class="filtros-container" style="margin-bottom: 1rem; display: flex; gap: 1rem;">
                     <input type="text" id="buscar-plato" placeholder="Buscar por nombre o categoría...">
                     <select id="filtro-estado">
@@ -148,25 +136,19 @@
                                 <th>Acciones</th>
                             </tr>
                         </thead>
-                        <tbody id="lista-platos">
-                            <!-- JS inyectará los platos aquí -->
-                        </tbody>
+                        <tbody id="lista-platos"></tbody>
                     </table>
                 </div>
             </section>
         </div>
     </main>
 
-    <!-- FOOTER GLOBAL -->
     <footer class="main-footer">
         <p>&copy; 2026 San Choclito | Parcial de Desarrollo Web - Ciclo 2026-1</p>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <script src="supabase-config.js"></script>
-
-    <script src="script.js"></script>
     <script src="platos.js"></script> 
 </body>
 </html>

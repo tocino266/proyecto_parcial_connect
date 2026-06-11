@@ -19,11 +19,8 @@ const chkOtro = document.getElementById('alergeno-otro');
 const inputAlergenoDetalle = document.getElementById('alergeno-detalle');
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Cargar datos desde Supabase al iniciar
     cargarPlatosDesdeSupabase();
-    
     configurarEventosAlergenos();
-    
     formPlatos.addEventListener('submit', manejarSubmit);
     btnCancelar.addEventListener('click', cancelarEdicion);
     inputBuscar.addEventListener('input', filtrarTabla);
@@ -34,10 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
    1. OPERACIONES CON SUPABASE
    ========================================== */
 async function cargarPlatosDesdeSupabase() {
-    // Mostrar mensaje de carga opcional
     listaPlatos.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando platos desde la nube...</td></tr>';
-    
-    const { data, error } = await clienteSupabase
+
+    const { data, error } = await window.clienteSupabase
         .from('platos')
         .select('*')
         .order('codigo', { ascending: true });
@@ -53,7 +49,7 @@ async function cargarPlatosDesdeSupabase() {
 }
 
 /* ==========================================
-   2. LÓGICA DE ALÉRGENOS (Sin cambios)
+   2. LÓGICA DE ALÉRGENOS
    ========================================== */
 function configurarEventosAlergenos() {
     checksAlergenos.forEach(chk => {
@@ -105,17 +101,19 @@ async function manejarSubmit(e) {
     const descripcion = document.getElementById('descripcion').value.trim();
     const categoria = document.getElementById('categoria').value;
     const precio = parseFloat(document.getElementById('precio').value);
-    const tiempo = parseInt(document.getElementById('tiempo').value);
+    const tiempo_preparacion = parseInt(document.getElementById('tiempo').value);
     const estado = document.getElementById('estado').value;
-    const modificables = document.getElementById('modificables').value.trim();
+    const ingredientes_modificables = document.getElementById('modificables').value.trim();
     const alergenos = obtenerAlergenosSeleccionados();
 
+    // Limpiar errores anteriores
     document.getElementById('error-codigo').textContent = '';
     document.getElementById('error-nombre').textContent = '';
     document.getElementById('error-alergenos').textContent = '';
 
+    // Validaciones
     if (alergenos.length === 0) {
-        document.getElementById('error-alergenos').textContent = 'Debe seleccionar al menos una opción.';
+        document.getElementById('error-alergenos').textContent = 'Debe seleccionar al menos una opción de alérgenos.';
         return;
     }
 
@@ -125,55 +123,95 @@ async function manejarSubmit(e) {
         return;
     }
 
+    if (precio < 0) {
+        document.getElementById('error-codigo').textContent = 'El precio no puede ser negativo.';
+        return;
+    }
+
+    if (!tiempo_preparacion || tiempo_preparacion < 1) {
+        document.getElementById('error-codigo').textContent = 'El tiempo de preparación debe ser al menos 1 minuto.';
+        return;
+    }
+
+    // Verificar duplicado de código directamente en Supabase (no solo en array local)
     if (!modoEdicion) {
-        const existeCodigo = platos.some(p => p.codigo === codigo);
-        if (existeCodigo) {
-            document.getElementById('error-codigo').textContent = 'Este código ya está registrado.';
+        const { data: existente, error: errBusqueda } = await window.clienteSupabase
+            .from('platos')
+            .select('codigo')
+            .eq('codigo', codigo)
+            .maybeSingle();
+
+        if (errBusqueda) {
+            document.getElementById('error-codigo').textContent = 'Error al verificar el código. Intenta de nuevo.';
+            return;
+        }
+
+        if (existente) {
+            document.getElementById('error-codigo').textContent = 'Este código ya está registrado en la base de datos.';
             return;
         }
     }
 
+    // Obtener el ID del perfil en usuarios_perfil (no el auth user id directamente)
+    let creadoPorId = null;
+    const usuario = await window.obtenerUsuarioActual();
+    if (usuario) {
+        const { data: perfil } = await window.clienteSupabase
+            .from('usuarios_perfil')
+            .select('id')
+            .eq('user_id', usuario.id)
+            .maybeSingle();
+        if (perfil) creadoPorId = perfil.id;
+    }
+
     const platoData = {
-        codigo, nombre, descripcion, categoria, 
-        precio, tiempo, estado, alergenos, modificables
+        codigo, nombre, descripcion, categoria,
+        precio, tiempo_preparacion, estado, alergenos,
+        ingredientes_modificables,
+        creado_por: creadoPorId
     };
 
-    // Bloquear botón mientras guarda
+
     btnGuardar.textContent = 'Guardando...';
     btnGuardar.disabled = true;
 
     if (modoEdicion) {
-        // ACTUALIZAR EN SUPABASE -> Usando clienteSupabase
-        const { error } = await clienteSupabase
+        // ACTUALIZAR EN SUPABASE
+        const { error } = await window.clienteSupabase
             .from('platos')
             .update(platoData)
             .eq('codigo', codigoEdicionActual);
 
         if (error) {
-            alert('Error al actualizar en la nube.');
+            let msg = 'Error al actualizar en la nube.';
+            if (error.code === '23505') msg = 'Ya existe un plato con ese código.';
+            alert(msg);
             console.error(error);
         } else {
             alert('Plato actualizado correctamente.');
         }
     } else {
-        // INSERTAR EN SUPABASE -> Usando clienteSupabase
-        const { error } = await clienteSupabase
+        // INSERTAR EN SUPABASE
+        const { error } = await window.clienteSupabase
             .from('platos')
             .insert([platoData]);
 
         if (error) {
-            alert('Error al registrar en la nube.');
+            let msg = 'Error al registrar en la nube.';
+            if (error.code === '23505') msg = 'Ya existe un plato con ese código. Usa un código diferente.';
+            alert(msg);
             console.error(error);
         } else {
             alert('Plato registrado correctamente.');
         }
     }
 
+    btnGuardar.textContent = 'Guardar Plato';
     btnGuardar.disabled = false;
     cancelarEdicion();
-    // Recargar datos frescos de la base de datos
-    await cargarPlatosDesdeSupabase(); 
+    await cargarPlatosDesdeSupabase();
 }
+
 /* ==========================================
    4. RENDERIZADO DE LA TABLA Y FILTROS
    ========================================== */
@@ -188,7 +226,7 @@ function renderizarTabla(platosAMostrar = platos) {
     platosAMostrar.forEach(plato => {
         const tr = document.createElement('tr');
         const badgeClass = plato.estado === 'Activo' ? 'badge activo' : 'badge inactivo';
-        
+
         tr.innerHTML = `
             <td><strong>${plato.codigo}</strong></td>
             <td>${plato.nombre}</td>
@@ -212,10 +250,9 @@ function filtrarTabla() {
     const estadoFiltro = selectFiltroEstado.value;
 
     const filtrados = platos.filter(plato => {
-        const coincideTexto = plato.nombre.toLowerCase().includes(textoBuscado) || 
+        const coincideTexto = plato.nombre.toLowerCase().includes(textoBuscado) ||
                               plato.categoria.toLowerCase().includes(textoBuscado);
         const coincideEstado = estadoFiltro === 'Todos' || plato.estado === estadoFiltro;
-        
         return coincideTexto && coincideEstado;
     });
 
@@ -238,15 +275,14 @@ function cargarDatosEdicion(codigo) {
     document.getElementById('descripcion').value = plato.descripcion;
     document.getElementById('categoria').value = plato.categoria;
     document.getElementById('precio').value = plato.precio;
-    document.getElementById('tiempo').value = plato.tiempo;
+    document.getElementById('tiempo').value = plato.tiempo_preparacion || plato.tiempo;
     document.getElementById('estado').value = plato.estado;
-    document.getElementById('modificables').value = plato.modificables;
+    document.getElementById('modificables').value = plato.ingredientes_modificables || plato.modificables || '';
 
     checksAlergenos.forEach(chk => chk.checked = false);
     inputAlergenoDetalle.classList.add('oculto');
     inputAlergenoDetalle.style.display = 'none';
-    
-    // Al venir de Supabase (JSONB), asegúrate de que sea un array
+
     const alergenosArray = Array.isArray(plato.alergenos) ? plato.alergenos : JSON.parse(plato.alergenos || '[]');
 
     alergenosArray.forEach(alergeno => {
@@ -271,16 +307,16 @@ function cancelarEdicion() {
     modoEdicion = false;
     codigoEdicionActual = '';
     formPlatos.reset();
-    
+
     document.getElementById('codigo').disabled = false;
     inputAlergenoDetalle.classList.add('oculto');
     inputAlergenoDetalle.style.display = 'none';
     inputAlergenoDetalle.required = false;
-    
+
     document.getElementById('error-codigo').textContent = '';
     document.getElementById('error-nombre').textContent = '';
     document.getElementById('error-alergenos').textContent = '';
-    
+
     btnGuardar.textContent = 'Guardar Plato';
     btnCancelar.style.display = 'none';
 }
@@ -290,15 +326,14 @@ async function cambiarEstado(codigo) {
     if (!plato) return;
 
     const nuevoEstado = plato.estado === 'Activo' ? 'Inactivo' : 'Activo';
-    
-    // Aquí está el cambio: clienteSupabase
-    const { error } = await clienteSupabase
+
+    const { error } = await window.clienteSupabase
         .from('platos')
         .update({ estado: nuevoEstado })
         .eq('codigo', codigo);
 
     if (error) {
-        alert('Error al cambiar el estado.');
+        alert('Error al cambiar el estado en la base de datos.');
         console.error(error);
     } else {
         await cargarPlatosDesdeSupabase();
@@ -306,16 +341,15 @@ async function cambiarEstado(codigo) {
 }
 
 async function eliminarPlato(codigo) {
-    if (confirm(`¿Estás seguro de que deseas eliminar el plato con código ${codigo}?`)) {
-        
-        // Aquí está el cambio: clienteSupabase
-        const { error } = await clienteSupabase
+    if (confirm(`¿Estás seguro de que deseas eliminar el plato con código ${codigo}?\nEsta acción no se puede deshacer.`)) {
+
+        const { error } = await window.clienteSupabase
             .from('platos')
             .delete()
             .eq('codigo', codigo);
 
         if (error) {
-            alert('Error al eliminar el plato.');
+            alert('Error al eliminar el plato de la base de datos.');
             console.error(error);
         } else {
             await cargarPlatosDesdeSupabase();

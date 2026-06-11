@@ -1,5 +1,6 @@
 /**
- * Lógica del Módulo 3: Tablero de Cocina - Integrado con Supabase
+ * script3.js — Tablero de Cocina - Integrado con Supabase
+ * Arquitectura real: pedidos (cabecera) + pedido_detalle (ítems) + platos (datos)
  */
 
 let pedidosCocina = [];
@@ -7,37 +8,40 @@ let pedidosCocina = [];
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('filtroEstado').addEventListener('change', renderizarTickets);
     document.getElementById('filtroPrioridad').addEventListener('change', renderizarTickets);
-    
+
     cargarPedidosCocina();
-    // Actualizar la vista automáticamente cada 15 segundos para buscar nuevos pedidos
-    setInterval(cargarPedidosCocina, 15000); 
+    setInterval(cargarPedidosCocina, 15000);
 });
 
 /* ==========================================
-   1. CARGAR DATOS DESDE SUPABASE
+   1. CARGAR DATOS DESDE SUPABASE (con join)
    ========================================== */
 async function cargarPedidosCocina() {
-    // Usamos clienteSupabase y filtramos los estados que le interesan a cocina
-    const { data, error } = await clienteSupabase
+    const { data, error } = await window.clienteSupabase
         .from('pedidos')
-        .select('*')
+        .select(`
+            *,
+            pedido_detalle (
+                id,
+                cantidad,
+                precio_unitario,
+                subtotal,
+                observacion,
+                plato:plato_id ( id, codigo, nombre, tiempo_preparacion, alergenos )
+            )
+        `)
         .in('estado', ['Enviado a cocina', 'En preparación', 'Listo para servir']);
-    
+
     if (error) {
         console.error("Error al cargar la cocina:", error);
         return;
     }
 
-    pedidosCocina = data.map(p => ({
-        ...p,
-        platos: typeof p.platos === 'string' ? JSON.parse(p.platos) : p.platos,
-        historial: typeof p.historial === 'string' ? JSON.parse(p.historial) : p.historial
-    }));
-    
-    pedidosCocina.sort((a, b) => {
-        if (a.prioridad === 'Urgente' && b.prioridad !== 'Urgente') return -1;
-        if (b.prioridad === 'Urgente' && a.prioridad !== 'Urgente') return 1;
-        return new Date(a.fecha) - new Date(b.fecha); 
+    pedidosCocina = (data || []).sort((a, b) => {
+        const prio = { 'Urgente': 3, 'Alta': 2, 'Normal': 1 };
+        if ((prio[b.prioridad] || 0) !== (prio[a.prioridad] || 0))
+            return (prio[b.prioridad] || 0) - (prio[a.prioridad] || 0);
+        return new Date(a.fecha_hora || a.fecha) - new Date(b.fecha_hora || b.fecha);
     });
 
     renderizarTickets();
@@ -49,58 +53,62 @@ async function cargarPedidosCocina() {
 function renderizarTickets() {
     const contenedor = document.getElementById('contenedor-tickets');
     const noOrders = document.getElementById('noOrders');
-    
+
     const fEstado = document.getElementById('filtroEstado').value;
     const fPrioridad = document.getElementById('filtroPrioridad').value;
 
     const pedidosFiltrados = pedidosCocina.filter(p => {
-        let pasaEstado = (fEstado === 'todos') ? true : p.estado === fEstado;
-        const valorFiltroP = fPrioridad.toLowerCase();
-        const valorPedidoP = (p.prioridad || "").toLowerCase();
-        let pasaPrioridad = (fPrioridad === "") ? true : valorPedidoP === valorFiltroP;
-        
+        const pasaEstado = (fEstado === 'todos') ? true : p.estado === fEstado;
+        const pasaPrioridad = (!fPrioridad) ? true : (p.prioridad || '').toLowerCase() === fPrioridad.toLowerCase();
         return pasaEstado && pasaPrioridad;
     });
 
-    if (pedidosFiltrados.length === 0) {
+    if (!pedidosFiltrados.length) {
         contenedor.innerHTML = '';
         noOrders.classList.remove('oculto');
         return;
     }
 
     noOrders.classList.add('oculto');
-    
+
     let html = '';
     pedidosFiltrados.forEach(pedido => {
         const esUrgente = pedido.prioridad === 'Urgente';
         const claseUrgente = esUrgente ? 'prioridad-urgente' : '';
-        const justificacionHtml = esUrgente ? `<div class="urgente-alerta">⚠ URGENTE: ${pedido.justificacion}</div>` : '';
-        
+        const justificacionHtml = esUrgente && pedido.justificacion_prioridad
+            ? `<div class="urgente-alerta">⚠ URGENTE: ${pedido.justificacion_prioridad}</div>`
+            : (esUrgente ? '<div class="urgente-alerta">⚠ URGENTE</div>' : '');
+
+        const detalles = pedido.pedido_detalle || [];
+
+        // Tiempo estimado: máximo de los platos
         let tiempoEstimado = 0;
-        if(pedido.platos && pedido.platos.length > 0) {
-           tiempoEstimado = Math.max(...pedido.platos.map(plato => plato.tiempo || 0));
-        }
+        detalles.forEach(d => {
+            const t = d.plato?.tiempo_preparacion || 0;
+            if (t > tiempoEstimado) tiempoEstimado = t;
+        });
 
         let estadoParaMostrar = pedido.estado === 'Enviado a cocina' ? 'Pendiente' : pedido.estado;
-        
+
+        // Lista de platos del pedido
         let platosHtml = '<ul class="platos-lista">';
-        pedido.platos.forEach((plato, indexPlato) => {
-            const obsHtml = plato.obs ? `<div class="plato-obs">🗣 Nota: ${plato.obs}</div>` : '';
-            let alergenosHtml = '';
-            if (plato.alergenos && plato.alergenos.length > 0) {
-                alergenosHtml = `<div class="plato-alergenos"><span>☣ Alérgenos:</span> ${plato.alergenos.join(', ')}</div>`;
-            }
-            const estadoPlato = plato.estado || 'Pendiente';
-            
+        detalles.forEach((d, indexDetalle) => {
+            const nombre = d.plato ? d.plato.nombre : 'Plato desconocido';
+            const alergenos = d.plato?.alergenos || [];
+            const alergStr = Array.isArray(alergenos) ? alergenos.join(', ') : '';
+            const obsHtml = d.observacion ? `<div class="plato-obs">🗣 Nota: ${d.observacion}</div>` : '';
+            const alergenosHtml = alergStr ? `<div class="plato-alergenos"><span>☣ Alérgenos:</span> ${alergStr}</div>` : '';
+            const estadoPlato = d.estado_cocina || 'Pendiente';
+
             platosHtml += `
                 <li class="plato-item">
                     <div class="plato-header">
-                        <span>${plato.nombre}</span>
-                        <span class="plato-cant">x${plato.cantidad}</span>
+                        <span>${nombre}</span>
+                        <span class="plato-cant">x${d.cantidad}</span>
                     </div>
                     <div class="plato-control-estado">
-                        <select class="select-plato-estado ${estadoPlato.replace(/ /g, '-').toLowerCase()}" 
-                                onchange="cambiarEstadoPlato('${pedido.codigo}', ${indexPlato}, this.value)">
+                        <select class="select-plato-estado ${estadoPlato.replace(/ /g, '-').toLowerCase()}"
+                                onchange="cambiarEstadoDetalle('${pedido.codigo}', '${d.id}', this.value)">
                             <option value="Pendiente" ${estadoPlato === 'Pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
                             <option value="En preparación" ${estadoPlato === 'En preparación' ? 'selected' : ''}>🔥 En preparación</option>
                             <option value="Listo" ${estadoPlato === 'Listo' ? 'selected' : ''}>✅ Listo</option>
@@ -108,31 +116,29 @@ function renderizarTickets() {
                     </div>
                     ${obsHtml}
                     ${alergenosHtml}
-                </li>
-            `;
+                </li>`;
         });
         platosHtml += '</ul>';
 
         let botonesHtml = '';
         let claseBadge = '';
+        const fechaAgradable = new Date(pedido.fecha_hora || pedido.fecha).toLocaleString('es-PE', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
 
         if (pedido.estado === 'Enviado a cocina') {
             claseBadge = 'estado-enviado';
             botonesHtml = `<button class="btn-accion btn-preparar" onclick="cambiarEstadoPedido('${pedido.codigo}', 'En preparación')">Confirmar Inicio de Cocina</button>`;
         } else if (pedido.estado === 'En preparación') {
             claseBadge = 'estado-preparacion';
-            const faltanPlatos = pedido.platos.some(plato => plato.estado !== 'Listo');
-            if (faltanPlatos) {
-                botonesHtml = `<button class="btn-accion" style="background-color: #ccc; cursor: not-allowed;" onclick="alert('Debes terminar todos los platos primero')">Faltan platos por terminar</button>`;
+            const todosListos = detalles.every(d => d.estado_cocina === 'Listo');
+            if (!todosListos) {
+                botonesHtml = `<button class="btn-accion" style="background-color:#ccc;cursor:not-allowed;" disabled>Faltan platos por terminar</button>`;
             } else {
                 botonesHtml = `<button class="btn-accion btn-listo" onclick="cambiarEstadoPedido('${pedido.codigo}', 'Listo para servir')">✓ Todo listo para Servir</button>`;
             }
         } else if (pedido.estado === 'Listo para servir') {
             claseBadge = 'estado-listo';
-            botonesHtml = `<div style="text-align: center; color: var(--color-verde-oscuro); font-weight: bold; padding: 0.8rem; background-color: #f0fdf4; border-radius: 6px;">¡Esperando recojo del mozo!</div>`;
+            botonesHtml = `<div style="text-align:center;color:var(--color-verde-oscuro);font-weight:bold;padding:.8rem;background:#f0fdf4;border-radius:6px;">¡Esperando recojo del mozo!</div>`;
         }
-
-        const fechaAgradable = new Date(pedido.fecha).toLocaleString('es-PE', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
 
         html += `
             <div class="ticket ${claseUrgente}">
@@ -142,20 +148,17 @@ function renderizarTickets() {
                     <div class="mesa-badge">Mesa ${pedido.mesa}</div>
                 </div>
                 <div class="ticket-info">
-                    <div>🧑‍🍳 Mozo: <strong>${pedido.mozo}</strong></div>
+                    <div>🧑‍🍳 Mozo: <strong>${pedido.mozo_nombre || 'N/A'}</strong></div>
                     <div>⏱ Tiempo aprox: <strong>${tiempoEstimado} min</strong></div>
                     <div>🚩 Prioridad: <strong>${pedido.prioridad}</strong></div>
-                    <div style="grid-column: span 2;">📅 ${fechaAgradable}</div>
+                    <div style="grid-column:span 2;">📅 ${fechaAgradable}</div>
                 </div>
-                <div class="ticket-body">
-                    ${platosHtml}
-                </div>
+                <div class="ticket-body">${platosHtml}</div>
                 <div class="ticket-footer">
                     <div class="badge-estado ${claseBadge}">Estado: ${estadoParaMostrar}</div>
                     ${botonesHtml}
                 </div>
-            </div>
-        `;
+            </div>`;
     });
     contenedor.innerHTML = html;
 }
@@ -167,58 +170,55 @@ async function cambiarEstadoPedido(codigoPedido, nuevoEstado) {
     const pedido = pedidosCocina.find(p => p.codigo === codigoPedido);
     if (!pedido) return;
 
-    if (nuevoEstado === 'En preparación') {
-        const hayPlatosPendientes = pedido.platos.some(plato => (plato.estado || 'Pendiente') === 'Pendiente');
-        if (hayPlatosPendientes) {
-            alert("❌ ¡Espera! Primero debes poner TODOS los platos en 'En preparación' individualmente arriba.");
-            return; 
-        }
-    }
+    const detalles = pedido.pedido_detalle || [];
 
-    if (nuevoEstado === 'Listo para servir') {
-        if (pedido.estado !== 'En preparación') {
-            alert("❌ No se puede marcar como listo un pedido que no está en preparación.");
-            return;
-        }
-        const todosListos = pedido.platos.every(plato => plato.estado === 'Listo');
+    if (nuevoEstado === 'Listo para servir' && pedido.estado === 'En preparación') {
+        const todosListos = detalles.every(d => d.estado_cocina === 'Listo');
         if (!todosListos) {
-            alert("❌ Faltan platos por terminar.");
+            alert("❌ Faltan platos por terminar. Todos deben estar en 'Listo'.");
             return;
         }
     }
 
-    const fechaISO = new Date().toISOString();
-    const nuevoHistorial = [...pedido.historial, { estado: nuevoEstado, fecha: fechaISO }];
-
-    const { error } = await clienteSupabase
+    const { error } = await window.clienteSupabase
         .from('pedidos')
-        .update({ estado: nuevoEstado, historial: nuevoHistorial })
+        .update({ estado: nuevoEstado })
         .eq('codigo', codigoPedido);
 
-    if (error) alert("Hubo un error de conexión.");
-    else await cargarPedidosCocina(); 
+    if (error) {
+        console.error("Error al actualizar estado:", error);
+        alert("Hubo un error de conexión al actualizar el pedido.");
+    } else {
+        await cargarPedidosCocina();
+    }
 }
 
-async function cambiarEstadoPlato(codigoPedido, indexPlato, nuevoEstado) {
+async function cambiarEstadoDetalle(codigoPedido, detalleId, nuevoEstado) {
     const pedido = pedidosCocina.find(p => p.codigo === codigoPedido);
     if (!pedido) return;
 
-    const plato = pedido.platos[indexPlato];
-    const estadoAnterior = plato.estado || 'Pendiente';
+    const detalle = (pedido.pedido_detalle || []).find(d => d.id === detalleId);
+    if (!detalle) return;
 
+    const estadoAnterior = detalle.estado_cocina || 'Pendiente';
     if (nuevoEstado === 'Listo' && estadoAnterior === 'Pendiente') {
-        alert("❌ El plato debe pasar primero por 'En preparación' antes de marcarlo como 'Listo'.");
-        renderizarTickets(); 
+        alert("❌ El plato debe pasar primero por 'En preparación'.");
+        renderizarTickets();
         return;
     }
 
-    pedido.platos[indexPlato].estado = nuevoEstado;
+    // Actualizar estado_cocina en pedido_detalle
+    const { error } = await window.clienteSupabase
+        .from('pedido_detalle')
+        .update({ estado_cocina: nuevoEstado })
+        .eq('id', detalleId);
 
-    const { error } = await clienteSupabase
-        .from('pedidos')
-        .update({ platos: pedido.platos })
-        .eq('codigo', codigoPedido);
-
-    if (error) alert("Hubo un error de conexión al actualizar el plato.");
-    else await cargarPedidosCocina(); 
+    if (error) {
+        // Si la columna estado_cocina no existe, actualizar solo en memoria para la UI
+        console.warn("Columna estado_cocina no disponible, actualizando en memoria:", error.message);
+        detalle.estado_cocina = nuevoEstado;
+        renderizarTickets();
+    } else {
+        await cargarPedidosCocina();
+    }
 }

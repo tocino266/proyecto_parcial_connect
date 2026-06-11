@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>San Choclito - Acceso</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .auth-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: var(--color-crema); padding: 2rem; }
+        .auth-card { background: white; padding: 2.5rem; border-radius: 15px; box-shadow: var(--sombra-suave); width: 100%; max-width: 400px; }
+        .auth-logo { text-align: center; margin-bottom: 2rem; }
+        .auth-logo h1 { color: var(--color-verde-oscuro); font-size: 2rem; font-family: 'Arial Rounded MT Bold', sans-serif; }
+        .auth-form { display: flex; flex-direction: column; gap: 1.2rem; }
+        .auth-form label { font-weight: 600; font-size: 0.9rem; color: var(--color-marron); }
+        .auth-form input, .auth-form select { padding: 0.8rem; border: 1px solid #ccc; border-radius: 8px; width: 100%; }
+        .auth-btn { background: var(--color-verde-oscuro); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1rem; }
+        .auth-btn:hover { background: var(--color-verde-claro); }
+        .auth-toggle { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: #555; }
+        .auth-toggle span { color: var(--color-verde-oscuro); font-weight: bold; cursor: pointer; text-decoration: underline; }
+        .hidden { display: none; }
+        .error-msg { color: #e74c3c; font-size: 0.85rem; font-weight: bold; margin-top: -0.8rem; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <h1>San Choclito</h1>
+                <p>Sistema de Gestión</p>
+            </div>
+
+            <form id="form-login" class="auth-form">
+                <div id="login-error" class="error-msg hidden"></div>
+                
+                <div>
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="login-email" required placeholder="correo@sanchoclito.com">
+                </div>
+                <div>
+                    <label>Contraseña</label>
+                    <input type="password" id="login-password" required placeholder="********">
+                </div>
+                
+                <button type="submit" class="auth-btn" id="btn-login">Ingresar</button>
+                
+                <div class="auth-toggle">
+                    ¿No tienes cuenta? <span onclick="toggleAuth('register')">Regístrate aquí</span>
+                </div>
+            </form>
+
+            <form id="form-register" class="auth-form hidden">
+                <div id="register-error" class="error-msg hidden"></div>
+
+                <div>
+                    <label>Nombre Completo</label>
+                    <input type="text" id="reg-nombre" required placeholder="Ej. Ana Torres">
+                </div>
+                <div>
+                    <label>Rol en el Restaurante</label>
+                    <select id="reg-rol" required>
+                        <option value="">Seleccione un rol...</option>
+                        <option value="Administrador">Administrador</option>
+                        <option value="Mozo">Mozo</option>
+                        <option value="Cocina">Cocina</option>
+                        <option value="Caja">Caja</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="reg-email" required placeholder="correo@sanchoclito.com">
+                </div>
+                <div>
+                    <label>Contraseña</label>
+                    <input type="password" id="reg-password" required placeholder="Mínimo 6 caracteres" minlength="6">
+                </div>
+                <div>
+                    <label>Confirmar Contraseña</label>
+                    <input type="password" id="reg-confirm" required placeholder="Repite tu contraseña">
+                </div>
+                
+                <button type="submit" class="auth-btn" id="btn-register">Registrar Usuario</button>
+                
+                <div class="auth-toggle">
+                    ¿Ya tienes cuenta? <span onclick="toggleAuth('login')">Ingresa aquí</span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="supabase-config.js"></script>
+    
+    <script src="auth.js"></script>
+</body>
+</html>

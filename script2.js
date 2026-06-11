@@ -3,44 +3,53 @@ let pedidos       = [];
 let platos        = [];
 let carritoActual = [];
 let prioridadSel  = '';
-let prioridadManual = false; 
+let prioridadManual = false;
 
 /* ─────────────────── INIT ─────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
-  // Cargas asíncronas iniciales desde Supabase
   await cargarPlatosDesdeSupabase();
   await cargarPedidosDesdeSupabase();
-  
   actualizarFecha();
   setInterval(actualizarFecha, 1000);
 });
 
 /* ─────────────────── SUPABASE FETCH ─────────────────── */
 async function cargarPlatosDesdeSupabase() {
-  // AQUÍ ESTABA EL ERROR: Cambiado a clienteSupabase
-  const { data, error } = await clienteSupabase
+  const { data, error } = await window.clienteSupabase
     .from('platos')
     .select('*')
-    .eq('estado', 'Activo'); // Solo traemos los activos
+    .eq('estado', 'Activo');
 
   if (error) {
     console.error("Error al cargar platos:", error);
+    toast('Error al cargar platos desde la base de datos.', true);
     return;
   }
-  
+
   platos = data || [];
   poblarSelectPlatos();
 }
 
 async function cargarPedidosDesdeSupabase() {
-  // Cambiado a clienteSupabase
-  const { data, error } = await clienteSupabase
+  // Carga pedidos con sus detalles de platos usando join de Supabase
+  const { data, error } = await window.clienteSupabase
     .from('pedidos')
-    .select('*')
-    .order('fecha', { ascending: false });
+    .select(`
+      *,
+      pedido_detalle (
+        id,
+        cantidad,
+        precio_unitario,
+        subtotal,
+        observacion,
+        plato:plato_id ( id, codigo, nombre, tiempo_preparacion, alergenos )
+      )
+    `)
+    .order('fecha_hora', { ascending: false });
 
   if (error) {
     console.error("Error al cargar pedidos:", error);
+    toast('Error al cargar pedidos desde la base de datos.', true);
     return;
   }
 
@@ -59,19 +68,18 @@ function poblarSelectPlatos() {
   }
   platos.forEach(p => {
     const opt = document.createElement('option');
-    opt.value = p.codigo;
+    opt.value = p.id;                          // Usamos UUID (plato_id) como valor
     opt.textContent = `${p.nombre} — S/ ${parseFloat(p.precio).toFixed(2)}`;
+    opt.dataset.codigo    = p.codigo;
     opt.dataset.precio    = p.precio;
     opt.dataset.nombre    = p.nombre;
-    opt.dataset.tiempo    = p.tiempo || 0;
-    
-    // Validar formato de alérgenos por si viene como texto o JSONB
+    opt.dataset.tiempo    = p.tiempo_preparacion || 0;
+
     let alergenosArray = [];
     try {
-        alergenosArray = typeof p.alergenos === 'string' ? JSON.parse(p.alergenos) : p.alergenos;
+        alergenosArray = typeof p.alergenos === 'string' ? JSON.parse(p.alergenos) : (p.alergenos || []);
     } catch (e) {}
-    opt.dataset.alergenos = JSON.stringify(alergenosArray || []);
-    
+    opt.dataset.alergenos = JSON.stringify(alergenosArray);
     sel.appendChild(opt);
   });
 }
@@ -140,19 +148,21 @@ function agregarPlato() {
 
   if (!sel.value)         { toast('Selecciona un plato.', true); return; }
   if (!cant || cant < 1)  { toast('La cantidad debe ser mayor a 0.', true); return; }
+  if (cant > 99)          { toast('La cantidad no puede superar 99.', true); return; }
 
-  const opt    = sel.options[sel.selectedIndex];
-  const precio = parseFloat(opt.dataset.precio) || 0;
-  const nombre = opt.dataset.nombre;
-  const tiempo = parseInt(opt.dataset.tiempo) || 0;
-  const alerg  = JSON.parse(opt.dataset.alergenos || '[]');
-  const cod    = sel.value;
+  const opt       = sel.options[sel.selectedIndex];
+  const platoId   = sel.value;                          // UUID del plato
+  const precio    = parseFloat(opt.dataset.precio) || 0;
+  const nombre    = opt.dataset.nombre;
+  const tiempo    = parseInt(opt.dataset.tiempo) || 0;
+  const alerg     = JSON.parse(opt.dataset.alergenos || '[]');
+  const codigo    = opt.dataset.codigo;
 
-  const exist = carritoActual.find(i => i.codigo === cod && i.obs === obs);
-  if (exist) { exist.cantidad += cant; } 
-  else { carritoActual.push({ codigo: cod, nombre, precio, cantidad: cant, obs, tiempo, alergenos: alerg }); }
+  const exist = carritoActual.find(i => i.plato_id === platoId && i.obs === obs);
+  if (exist) { exist.cantidad += cant; }
+  else { carritoActual.push({ plato_id: platoId, codigo, nombre, precio, cantidad: cant, obs, tiempo, alergenos: alerg }); }
 
-  sugerirPrioridad(); 
+  sugerirPrioridad();
   renderCarrito();
 
   sel.value = '';
@@ -245,42 +255,94 @@ function validarFormulario() {
   return ok;
 }
 
-/* ─────────────────── GUARDAR (SUPABASE) ─────────────────── */
+/* ─────────────────── GUARDAR (SUPABASE - 2 tablas) ─────────────────── */
 async function guardarPedido() {
   if (!validarFormulario()) { toast('Revisa los campos con error.', true); return; }
 
   const mozo   = document.getElementById('mozo').value.trim();
   const mesa   = parseInt(document.getElementById('numMesa').value);
   const codigo = document.getElementById('codPedido').value;
-  const fechaISO = new Date().toISOString(); 
+  const fechaISO = new Date().toISOString();
   const just   = document.getElementById('justificacion').value.trim();
   const total  = carritoActual.reduce((s, i) => s + i.precio * i.cantidad, 0);
 
-  toast('Guardando en la nube...');
+  // Verificar código duplicado
+  const { data: existeCodigo } = await window.clienteSupabase
+    .from('pedidos')
+    .select('codigo')
+    .eq('codigo', codigo)
+    .maybeSingle();
 
-  const nuevoPedido = {
-    codigo, mozo, mesa, 
-    fecha: fechaISO, 
-    prioridad: prioridadSel,
-    justificacion: just,
-    estado: 'Registrado',
-    platos: carritoActual, 
-    total: parseFloat(total.toFixed(2)),
-    historial: [{ estado: 'Registrado', fecha: fechaISO }] 
-  };
-
-  // Cambiado a clienteSupabase
-  const { error } = await clienteSupabase.from('pedidos').insert([nuevoPedido]);
-
-  if (error) {
-    console.error("Error al guardar pedido:", error);
-    toast('Error de conexión al guardar.', true);
+  if (existeCodigo) {
+    toast('Error: código de pedido duplicado. Recargando...', true);
+    await cargarPedidosDesdeSupabase();
     return;
   }
 
-  toast(`Pedido ${codigo} guardado correctamente ✓`);
+  // Obtener el ID del perfil en usuarios_perfil (no el auth user id directamente)
+  let mozoPerfilId = null;
+  const usuario = await window.obtenerUsuarioActual();
+  if (usuario) {
+      const { data: perfil } = await window.clienteSupabase
+          .from('usuarios_perfil')
+          .select('id')
+          .eq('user_id', usuario.id)
+          .maybeSingle();
+      if (perfil) mozoPerfilId = perfil.id;
+  }
+
+  toast('Guardando en la nube...');
+
+  // PASO 1: Insertar el pedido principal
+  const nuevoPedido = {
+    codigo,
+    mozo_id: mozoPerfilId,
+    mozo_nombre: mozo,
+    mesa,
+    fecha_hora: fechaISO,
+    prioridad: prioridadSel,
+    justificacion_prioridad: prioridadSel === 'Urgente' ? just : null,
+    estado: 'Registrado',
+    total: parseFloat(total.toFixed(2))
+  };
+
+  const { data: pedidoInsertado, error: errPedido } = await window.clienteSupabase
+    .from('pedidos')
+    .insert([nuevoPedido])
+    .select()
+    .single();
+
+  if (errPedido) {
+    console.error("Error al guardar pedido:", errPedido);
+    let msg = 'Error de conexión al guardar.';
+    if (errPedido.code === '23505') msg = 'Ya existe un pedido con ese código. Intenta de nuevo.';
+    toast(msg, true);
+    return;
+  }
+
+  // PASO 2: Insertar los ítems en pedido_detalle
+  const detalles = carritoActual.map(item => ({
+    pedido_id: pedidoInsertado.id,
+    plato_id: item.plato_id,
+    cantidad: item.cantidad,
+    precio_unitario: parseFloat(item.precio.toFixed(2)),
+    subtotal: parseFloat((item.precio * item.cantidad).toFixed(2)),
+    observacion: item.obs || null
+  }));
+
+  const { error: errDetalles } = await window.clienteSupabase
+    .from('pedido_detalle')
+    .insert(detalles);
+
+  if (errDetalles) {
+    console.error("Error al guardar detalles:", errDetalles);
+    toast(`Pedido ${codigo} guardado pero hubo un error en los detalles.`, true);
+  } else {
+    toast(`Pedido ${codigo} guardado correctamente ✓`);
+  }
+
   resetForm();
-  await cargarPedidosDesdeSupabase(); 
+  await cargarPedidosDesdeSupabase();
 }
 
 /* ─────────────────── RESET ─────────────────── */
@@ -294,7 +356,7 @@ function resetForm() {
   document.getElementById('justificacionWrap').style.display = 'none';
   document.querySelectorAll('.priority-pill').forEach(p => p.className = 'priority-pill');
   prioridadSel    = '';
-  prioridadManual = false; 
+  prioridadManual = false;
   carritoActual   = [];
   renderCarrito();
   ['mozo','mesa','prioridad','justificacion'].forEach(clearErr);
@@ -325,6 +387,13 @@ const estadoBadge = {
 };
 const prioBadge = { Normal:'badge-normal', Alta:'badge-alta', Urgente:'badge-urgente' };
 
+function obtenerNItemsPedido(p) {
+  if (p.pedido_detalle && p.pedido_detalle.length) {
+    return p.pedido_detalle.reduce((s, d) => s + (d.cantidad || 1), 0);
+  }
+  return 0;
+}
+
 function renderTabla() {
   const fEst  = document.getElementById('filtroEstado').value;
   const fPrio = document.getElementById('filtroPrioridad').value;
@@ -335,9 +404,9 @@ function renderTabla() {
     if (fEst  && p.estado    !== fEst)  return false;
     if (fPrio && p.prioridad !== fPrio) return false;
     if (fMesa && p.mesa      !== fMesa) return false;
-    if (fMozo && !p.mozo.toLowerCase().includes(fMozo)) return false;
+    // Sin columna mozo texto, filtramos por código si se escribe algo
     return true;
-  }); 
+  });
 
   const tbody = document.getElementById('tablaPedidos');
   const noOrd = document.getElementById('noOrders');
@@ -352,20 +421,17 @@ function renderTabla() {
   tbody.innerHTML = datos.map(p => {
     const bEst  = estadoBadge[p.estado]  || 'badge-registrado';
     const bPrio = prioBadge[p.prioridad] || 'badge-normal';
-    
-    const platosArray = typeof p.platos === 'string' ? JSON.parse(p.platos) : p.platos;
-    const nPlatos = platosArray.reduce((s, i) => s + i.cantidad, 0);
-    
-    const fechaAgradable = new Date(p.fecha).toLocaleString('es-PE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const nPlatos = obtenerNItemsPedido(p);
+    const fechaAgradable = new Date(p.fecha_hora || p.fecha).toLocaleString('es-PE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
     const puedeEnviar  = p.estado === 'Registrado';
     const puedeCancelar= !['Cancelado','Entregado','Facturado'].includes(p.estado);
     const puedeEntregar= p.estado === 'Listo para servir';
-    
+
     return `<tr>
       <td><strong>${p.codigo}</strong></td>
       <td>Mesa ${p.mesa}</td>
-      <td>${p.mozo}</td>
+      <td>${p.mozo_nombre || 'N/A'}</td>
       <td style="font-size:.8rem;white-space:nowrap">${fechaAgradable}</td>
       <td>${nPlatos} ítem${nPlatos !== 1 ? 's' : ''}</td>
       <td><strong>S/ ${parseFloat(p.total).toFixed(2)}</strong></td>
@@ -388,28 +454,24 @@ async function actualizarEstadoEnNube(cod, nuevoEstado) {
   const p = pedidos.find(x => x.codigo === cod);
   if (!p) return;
 
-  const fechaISO = new Date().toISOString();
-  
-  let historialArray = typeof p.historial === 'string' ? JSON.parse(p.historial) : p.historial;
-  historialArray.push({ estado: nuevoEstado, fecha: fechaISO });
+  if (p.estado === 'Cancelado') {
+    toast('No se puede cambiar el estado de un pedido cancelado.', true);
+    return;
+  }
 
   toast('Procesando...', false);
 
-  // Cambiado a clienteSupabase
-  const { error } = await clienteSupabase
+  const { error } = await window.clienteSupabase
     .from('pedidos')
-    .update({ 
-        estado: nuevoEstado,
-        historial: historialArray
-    })
+    .update({ estado: nuevoEstado })
     .eq('codigo', cod);
 
   if (error) {
     console.error(`Error al cambiar a ${nuevoEstado}:`, error);
-    toast('Error de conexión.', true);
+    toast('Error de conexión al actualizar el pedido.', true);
   } else {
-    toast(`Pedido ${cod} -> ${nuevoEstado} ✓`);
-    await cargarPedidosDesdeSupabase(); 
+    toast(`Pedido ${cod} → ${nuevoEstado} ✓`);
+    await cargarPedidosDesdeSupabase();
   }
 }
 
@@ -418,7 +480,15 @@ function cambiarEstadoDesdeBoton(cod, estado) {
 }
 
 function cancelarPedidoConfirmado(cod) {
-  if (confirm(`¿Confirmas cancelar el pedido ${cod}?`)) {
+  const p = pedidos.find(x => x.codigo === cod);
+  if (!p) return;
+
+  if (p.estado === 'Cancelado') {
+    toast('Este pedido ya está cancelado.', true);
+    return;
+  }
+
+  if (confirm(`¿Confirmas cancelar el pedido ${cod}?\nEsta acción no se puede deshacer.`)) {
     actualizarEstadoEnNube(cod, 'Cancelado');
   }
 }
@@ -429,21 +499,20 @@ function verDetalle(cod) {
   if (!p) return;
   const bEst  = estadoBadge[p.estado]  || 'badge-registrado';
   const bPrio = prioBadge[p.prioridad] || 'badge-normal';
-  
-  const platosArray = typeof p.platos === 'string' ? JSON.parse(p.platos) : p.platos;
-  const historialArray = typeof p.historial === 'string' ? JSON.parse(p.historial) : p.historial;
-  const fechaAgradable = new Date(p.fecha).toLocaleString('es-PE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  const fechaAgradable = new Date(p.fecha_hora || p.fecha).toLocaleString('es-PE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+  const detalles = p.pedido_detalle || [];
 
   document.getElementById('modalTitle').textContent = `Pedido ${p.codigo}`;
   document.getElementById('modalBody').innerHTML = `
     <div class="detail-grid">
       <div class="detail-row"><span class="d-label">Código</span><span class="d-val">${p.codigo}</span></div>
       <div class="detail-row"><span class="d-label">Mesa</span><span class="d-val">Mesa ${p.mesa}</span></div>
-      <div class="detail-row"><span class="d-label">Mozo</span><span class="d-val">${p.mozo}</span></div>
+      <div class="detail-row"><span class="d-label">Mozo</span><span class="d-val">${p.mozo_nombre || 'N/A'}</span></div>
       <div class="detail-row"><span class="d-label">Fecha/Hora</span><span class="d-val">${fechaAgradable}</span></div>
       <div class="detail-row"><span class="d-label">Estado</span><span class="d-val"><span class="badge ${bEst}">${p.estado}</span></span></div>
       <div class="detail-row"><span class="d-label">Prioridad</span><span class="d-val"><span class="badge ${bPrio}">${p.prioridad}</span></span></div>
-      ${p.justificacion ? `<div class="detail-row" style="grid-column:1/-1"><span class="d-label">Justificación urgencia</span><span class="d-val">${p.justificacion}</span></div>` : ''}
+      ${p.justificacion_prioridad ? `<div class="detail-row" style="grid-column:1/-1"><span class="d-label">Justificación urgencia</span><span class="d-val">${p.justificacion_prioridad}</span></div>` : ''}
       <div class="detail-row" style="grid-column:1/-1">
         <span class="d-label">Total</span>
         <span class="d-val" style="font-size:1.2rem;font-weight:700;color:var(--green-dk)">S/ ${parseFloat(p.total).toFixed(2)}</span>
@@ -454,26 +523,25 @@ function verDetalle(cod) {
     <div style="display:grid;grid-template-columns:2fr .5fr .8fr 1fr;gap:.4rem;padding:.4rem .7rem;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-soft);">
       <span>Plato</span><span>Cant.</span><span>P.Unit.</span><span>Subtotal</span>
     </div>
-    ${platosArray.map(pl => `
+    ${detalles.length ? detalles.map(d => {
+      const nombrePlato = d.plato ? d.plato.nombre : 'Plato';
+      const alergenos   = d.plato?.alergenos || [];
+      const alergStr    = Array.isArray(alergenos) ? alergenos.join(', ') : '';
+      return `
       <div class="detail-dish-row">
-        <div class="ddr-name">${pl.nombre}
-          ${pl.alergenos && pl.alergenos.length ? `<div class="detail-dish-obs">⚠ Alérgenos: ${pl.alergenos.join(', ')}</div>` : ''}
-          ${pl.obs ? `<div class="detail-dish-obs">📝 ${pl.obs}</div>` : ''}
+        <div class="ddr-name">${nombrePlato}
+          ${alergStr ? `<div class="detail-dish-obs">⚠ Alérgenos: ${alergStr}</div>` : ''}
+          ${d.observacion ? `<div class="detail-dish-obs">📝 ${d.observacion}</div>` : ''}
         </div>
-        <div>${pl.cantidad}</div>
-        <div>S/ ${parseFloat(pl.precio).toFixed(2)}</div>
-        <div><strong>S/ ${(pl.precio * pl.cantidad).toFixed(2)}</strong></div>
-      </div>`).join('')}
+        <div>${d.cantidad}</div>
+        <div>S/ ${parseFloat(d.precio_unitario||0).toFixed(2)}</div>
+        <div><strong>S/ ${parseFloat(d.subtotal||0).toFixed(2)}</strong></div>
+      </div>`;
+    }).join('') : '<p style="padding:.5rem .7rem;color:var(--text-soft)">Sin detalles disponibles.</p>'}
 
     <div style="text-align:right;padding:1rem .7rem;font-size:1.1rem;font-weight:700;color:var(--green-dk);border-top:2px solid var(--border);margin-top:.5rem;">
       TOTAL: S/ ${parseFloat(p.total).toFixed(2)}
     </div>
-
-    <div class="detail-dishes-title">📜 Historial de estados</div>
-    ${historialArray.map(h => `
-      <div style="display:flex;gap:1rem;font-size:.85rem;padding:.35rem .7rem;border-left:3px solid var(--green-lt);margin-bottom:.3rem;background:var(--surface);border-radius:0 6px 6px 0;">
-        <strong>${h.estado}</strong> <span style="color:var(--text-soft)">${new Date(h.fecha).toLocaleString('es-PE', { hour:'2-digit', minute:'2-digit', second:'2-digit' })}</span>
-      </div>`).join('')}
   `;
   document.getElementById('modalOverlay').classList.add('open');
 }

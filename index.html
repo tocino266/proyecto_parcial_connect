@@ -4,21 +4,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>San Choclito - Sistema de Gestión</title>
+    <meta name="description" content="Sistema de gestión integral del Restaurante San Choclito. Administra platos, pedidos, cocina y facturación.">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .bienvenida-banner {
+            background: linear-gradient(135deg, var(--color-verde-oscuro), var(--color-verde-claro));
+            color: white;
+            padding: 0.6rem 1.2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            letter-spacing: 0.02em;
+        }
+        .bienvenida-banner strong { font-weight: 700; }
+        .badge-rol {
+            display: inline-block;
+            background: rgba(255,255,255,0.25);
+            padding: 0.15rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+            font-weight: 600;
+        }
+    </style>
 </head>
 <body>
-    <header class="navbar">
+    <div class="bienvenida-banner" id="bienvenida-banner" style="display:none;">
+        Bienvenido/a, <strong id="usuario-nombre">Usuario</strong>
+        <span class="badge-rol" id="usuario-rol">Sin rol</span>
+    </div>
 
-        
+    <header class="navbar">
         <div class="brand">
             <span class="brand-text">Panel de Control</span>
         </div>
         <nav>
             <ul class="nav-links">
+                <li><a href="index.html" class="nav-btn active">Home</a></li>
                 <li><a href="platos.html" class="nav-btn">Platos</a></li>
                 <li><a href="pedidos.html" class="nav-btn">Pedidos</a></li>
                 <li><a href="cocina.html" class="nav-btn">Cocina</a></li>
                 <li><a href="facturacion.html" class="nav-btn">Facturación</a></li>
+                <li>
+                    <button type="button" id="btn-cerrar-sesion" onclick="window.cerrarSesion()" class="nav-btn" style="background-color: #e74c3c; color: white; border: none; cursor: pointer;">
+                        Cerrar Sesión
+                    </button>
+                </li>
             </ul>
         </nav>
     </header>
@@ -28,9 +58,15 @@
             <div class="image-container">
                 <img src="sanchoclito.png" alt="Mascota San Choclito" class="hero-image">
             </div>
-            
+
             <h1 class="hero-title">San Choclito</h1>
-            <p class="hero-subtitle">Restaurante & Gestión Integral</p>
+            <p class="hero-subtitle">Restaurante &amp; Gestión Integral</p>
+
+            <div id="admin-actions" style="display:none; margin-top: 2rem; text-align: center;">
+                <button type="button" id="btn-borrar-todo" onclick="borrarTodoSistema()" style="background-color: #c0392b; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.2s, background-color 0.2s;">
+                    ⚠️ ZONA ADMIN: BORRAR TODO EL SISTEMA ⚠️
+                </button>
+            </div>
         </div>
     </main>
 
@@ -38,6 +74,8 @@
         <p>&copy; 2026 San Choclito | Parcial de Desarrollo Web - Ciclo 2026-1</p>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

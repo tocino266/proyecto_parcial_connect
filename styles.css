@@ -16,6 +16,10 @@
     box-sizing: border-box;
 }
 
+html {
+    overflow-y: scroll;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--color-crema);
@@ -52,6 +56,9 @@ body {
     display: flex;
     list-style: none;
     gap: 1.5rem;
+    align-items: center;
+    margin: 0;
+    padding: 0;
 }
 
 .nav-btn {
@@ -68,7 +75,6 @@ body {
 .nav-btn:hover {
     background-color: var(--color-verde-oscuro);
     color: var(--color-blanco);
-    transform: translateY(-2px);
 }
 
 /* ============================

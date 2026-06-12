@@ -39,16 +39,12 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    /* Ajustado a 3rem en los lados para que "PANEL DE CONTROL" 
-       no se mueva a la izquierda respecto a Pedidos/Platos */
-    padding: 1.5rem 3rem; 
+    padding: 1.5rem 3rem;
     background-color: var(--color-blanco);
     box-shadow: var(--sombra-suave);
     position: sticky;
     top: 0;
     z-index: 100;
-    width: 100%;
-    flex-wrap: nowrap; 
 }
 
 .brand-text {
@@ -63,10 +59,9 @@ body {
 
 .nav-links {
     display: flex;
-    /* Mantenemos 2rem pero asegúrate que en el HTML no haya espacios extra */
-    gap: 2rem; 
-    align-items: center;
     list-style: none;
+    gap: 1.5rem;
+    align-items: center;
     margin: 0;
     padding: 0;
 }
@@ -82,7 +77,12 @@ body {
     border: 2px solid transparent;
 }
 
-.nav-btn:hover, .nav-btn.active {
+.nav-btn:hover {
+    background-color: var(--color-verde-oscuro);
+    color: var(--color-blanco);
+}
+
+.nav-btn.active {
     background-color: var(--color-verde-oscuro);
     color: var(--color-blanco);
 }
@@ -256,22 +256,14 @@ select:focus { outline: none; border-color: var(--color-verde-claro); }
 
 /* --- AJUSTE PARA QUE SE VEA IGUAL A PLATOS --- */
 /* Solo se activa si la ventana es menor a 1024px */
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
     .navbar {
         flex-direction: column;
-        padding: 1.5rem 1rem;
         gap: 1rem;
+        padding: 1.5rem;
     }
-
-    .brand-text {
-        text-align: center;
-        width: 100%;
-        font-size: 1.2rem; /* Se mantiene igual que en platos */
-    }
-
     .nav-links {
+        flex-wrap: wrap;
         justify-content: center;
-        width: 100%;
-        gap: 0.8rem;
     }
 }

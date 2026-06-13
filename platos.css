@@ -2,6 +2,12 @@
    Módulo 1: Gestión de Platos
    ============================ */
 
+/* Botón activo en la navegación */
+.nav-btn.active {
+    background-color: var(--color-verde-oscuro) !important;
+    color: var(--color-blanco) !important;
+}
+
 /* Contenedor principal del módulo */
 .modulo-container {
     flex: 1;

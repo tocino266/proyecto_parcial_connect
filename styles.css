@@ -77,6 +77,11 @@ body {
     color: var(--color-blanco);
 }
 
+.nav-btn.active {
+    background-color: var(--color-verde-oscuro);
+    color: var(--color-blanco);
+}
+
 /* ============================
    Sección Central (Hero)
    ============================ */

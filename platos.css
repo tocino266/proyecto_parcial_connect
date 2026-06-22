@@ -303,6 +303,42 @@ tbody tr:hover {
         padding: 1.5rem;
     }
 }
+
+@media (max-width: 600px) {
+    .modulo-container {
+        padding: 1rem;
+        /* ponytail: prevents table min-widths from pushing body wider than viewport */
+        overflow-x: hidden;
+    }
+
+    .form-section, .table-section {
+        padding: 1.2rem;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    .form-group-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .modulo-titulo {
+        font-size: 1.6rem;
+    }
+
+    .form-section h3, .table-section h3 {
+        font-size: 1.15rem;
+    }
+
+    /* ponytail: checkbox grid collapses to 2 cols on tiny screens */
+    .checkbox-group {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    td:last-child {
+        min-width: auto;
+    }
+}
 /* ============================
    Ajustes Visuales de la Tabla
    ============================ */

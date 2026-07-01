@@ -106,7 +106,7 @@ function renderizarPedidos(lista) {
     lista.forEach(item => {
         const sub = item.cant * item.precio;
         subtotalGeneral += sub;
-        tablaCuerpo.innerHTML += `<tr><td>${item.codigo}</td><td>${item.nombre}</td><td>${item.cant}</td><td>S/ ${parseFloat(item.precio).toFixed(2)}</td><td>S/ ${sub.toFixed(2)}</td><td>${item.obs}</td><td>${item.mozo}</td></tr>`;
+        tablaCuerpo.innerHTML += `<tr><td>${escapeHtml(item.codigo)}</td><td>${escapeHtml(item.nombre)}</td><td>${item.cant}</td><td>S/ ${parseFloat(item.precio).toFixed(2)}</td><td>S/ ${sub.toFixed(2)}</td><td>${escapeHtml(item.obs)}</td><td>${escapeHtml(item.mozo)}</td></tr>`;
     });
     resumenConsumo.classList.remove('hidden');
     calcularTotalFinal();
@@ -256,15 +256,15 @@ async function renderizarHistorial() {
 
         return `
         <div class="factura-card">
-            <h4>${f.codigo || f.nro || 'Sin código'}</h4>
+            <h4>${escapeHtml(f.codigo || f.nro || 'Sin código')}</h4>
             <p><strong>Mesa:</strong> ${f.mesa}</p>
             <p><strong>Subtotal:</strong> S/ ${parseFloat(f.subtotal || 0).toFixed(2)}</p>
             <p><strong>Total:</strong> S/ ${parseFloat(f.total).toFixed(2)}</p>
-            <p><strong>Pago:</strong> ${f.metodo_pago || f.metodo || '-'}</p>
+            <p><strong>Pago:</strong> ${escapeHtml(f.metodo_pago || f.metodo || '-')}</p>
             ${f.descuento > 0 ? `<p><strong>Descuento:</strong> S/ ${parseFloat(f.descuento).toFixed(2)}</p>` : ''}
             ${f.monto_recibido ? `<p><strong>Recibido:</strong> S/ ${parseFloat(f.monto_recibido).toFixed(2)}</p>` : ''}
             ${f.vuelto > 0 ? `<p><strong>Vuelto:</strong> S/ ${parseFloat(f.vuelto).toFixed(2)}</p>` : ''}
-            <p><strong>Estado:</strong> ${f.estado || 'Pagada'}</p>
+            <p><strong>Estado:</strong> ${escapeHtml(f.estado || 'Pagada')}</p>
             <small>${fechaAgradable}</small>
         </div>`;
     }).join('');

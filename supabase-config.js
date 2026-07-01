@@ -6,6 +6,12 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 window.clienteSupabase = supabase.createClient(supabaseUrl, supabaseKey);
 
+// ponytail: XSS prevention — escape user data before innerHTML insertion
+window.escapeHtml = function(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+};
+
 // =========================================================
 // FUNCIONES DE UTILIDAD DE SESIÓN (sin localStorage)
 // =========================================================

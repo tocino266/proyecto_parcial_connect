@@ -11,6 +11,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   await cargarPedidosDesdeSupabase();
   actualizarFecha();
   setInterval(actualizarFecha, 1000);
+
+  // ponytail: realtime — pedidos list updates instantly when cocina changes status
+  let _rt = null;
+  const recargar = () => { clearTimeout(_rt); _rt = setTimeout(cargarPedidosDesdeSupabase, 300); };
+  window.clienteSupabase
+      .channel('pedidos-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, recargar)
+      .subscribe();
 });
 
 /* ─────────────────── SUPABASE FETCH ─────────────────── */
@@ -190,10 +198,10 @@ function renderCarrito() {
 
   list.innerHTML = carritoActual.map((item, i) => {
     const sub  = (item.precio * item.cantidad).toFixed(2);
-    const alg  = (item.alergenos && item.alergenos.length) ? `<br><span style="font-size:.75rem;color:var(--warn);">⚠ ${item.alergenos.join(', ')}</span>` : '';
-    const obs  = item.obs ? `<br><em>${item.obs}</em>` : '';
+    const alg  = (item.alergenos && item.alergenos.length) ? `<br><span style="font-size:.75rem;color:var(--warn);">⚠ ${escapeHtml(item.alergenos.join(', '))}</span>` : '';
+    const obs  = item.obs ? `<br><em>${escapeHtml(item.obs)}</em>` : '';
     return `<div class="dish-item">
-      <div class="dish-name">${item.nombre}${alg}${obs}</div>
+      <div class="dish-name">${escapeHtml(item.nombre)}${alg}${obs}</div>
       <div class="dish-qty">${item.cantidad}</div>
       <div class="dish-price">S/ ${item.precio.toFixed(2)}</div>
       <div class="dish-sub">S/ ${sub}</div>
@@ -429,20 +437,20 @@ function renderTabla() {
     const puedeEntregar= p.estado === 'Listo para servir';
 
     return `<tr>
-      <td><strong>${p.codigo}</strong></td>
+      <td><strong>${escapeHtml(p.codigo)}</strong></td>
       <td>Mesa ${p.mesa}</td>
-      <td>${p.mozo_nombre || 'N/A'}</td>
+      <td>${escapeHtml(p.mozo_nombre || 'N/A')}</td>
       <td style="font-size:.8rem;white-space:nowrap">${fechaAgradable}</td>
       <td>${nPlatos} ítem${nPlatos !== 1 ? 's' : ''}</td>
       <td><strong>S/ ${parseFloat(p.total).toFixed(2)}</strong></td>
-      <td><span class="badge ${bPrio}">${p.prioridad}</span></td>
-      <td><span class="badge ${bEst}">${p.estado}</span></td>
+      <td><span class="badge ${bPrio}">${escapeHtml(p.prioridad)}</span></td>
+      <td><span class="badge ${bEst}">${escapeHtml(p.estado)}</span></td>
       <td>
         <div class="actions-cell">
-          <button type="button" class="btn-xs btn-xs-outline" onclick="verDetalle('${p.codigo}')">Ver</button>
-          ${puedeEnviar   ? `<button type="button" class="btn-xs btn-xs-warn"  onclick="cambiarEstadoDesdeBoton('${p.codigo}', 'Enviado a cocina')">→ Cocina</button>` : ''}
-          ${puedeEntregar ? `<button type="button" class="btn-xs btn-xs-green" onclick="cambiarEstadoDesdeBoton('${p.codigo}', 'Entregado')">Entregar</button>` : ''}
-          ${puedeCancelar ? `<button type="button" class="btn-xs btn-xs-red"   onclick="cancelarPedidoConfirmado('${p.codigo}')">Cancelar</button>` : ''}
+          <button type="button" class="btn-xs btn-xs-outline" onclick="verDetalle('${escapeHtml(p.codigo)}')">Ver</button>
+          ${puedeEnviar   ? `<button type="button" class="btn-xs btn-xs-warn"  onclick="cambiarEstadoDesdeBoton('${escapeHtml(p.codigo)}', 'Enviado a cocina')">→ Cocina</button>` : ''}
+          ${puedeEntregar ? `<button type="button" class="btn-xs btn-xs-green" onclick="cambiarEstadoDesdeBoton('${escapeHtml(p.codigo)}', 'Entregado')">Entregar</button>` : ''}
+          ${puedeCancelar ? `<button type="button" class="btn-xs btn-xs-red"   onclick="cancelarPedidoConfirmado('${escapeHtml(p.codigo)}')">Cancelar</button>` : ''}
         </div>
       </td>
     </tr>`;
@@ -506,13 +514,13 @@ function verDetalle(cod) {
   document.getElementById('modalTitle').textContent = `Pedido ${p.codigo}`;
   document.getElementById('modalBody').innerHTML = `
     <div class="detail-grid">
-      <div class="detail-row"><span class="d-label">Código</span><span class="d-val">${p.codigo}</span></div>
+      <div class="detail-row"><span class="d-label">Código</span><span class="d-val">${escapeHtml(p.codigo)}</span></div>
       <div class="detail-row"><span class="d-label">Mesa</span><span class="d-val">Mesa ${p.mesa}</span></div>
-      <div class="detail-row"><span class="d-label">Mozo</span><span class="d-val">${p.mozo_nombre || 'N/A'}</span></div>
+      <div class="detail-row"><span class="d-label">Mozo</span><span class="d-val">${escapeHtml(p.mozo_nombre || 'N/A')}</span></div>
       <div class="detail-row"><span class="d-label">Fecha/Hora</span><span class="d-val">${fechaAgradable}</span></div>
-      <div class="detail-row"><span class="d-label">Estado</span><span class="d-val"><span class="badge ${bEst}">${p.estado}</span></span></div>
-      <div class="detail-row"><span class="d-label">Prioridad</span><span class="d-val"><span class="badge ${bPrio}">${p.prioridad}</span></span></div>
-      ${p.justificacion_prioridad ? `<div class="detail-row" style="grid-column:1/-1"><span class="d-label">Justificación urgencia</span><span class="d-val">${p.justificacion_prioridad}</span></div>` : ''}
+      <div class="detail-row"><span class="d-label">Estado</span><span class="d-val"><span class="badge ${bEst}">${escapeHtml(p.estado)}</span></span></div>
+      <div class="detail-row"><span class="d-label">Prioridad</span><span class="d-val"><span class="badge ${bPrio}">${escapeHtml(p.prioridad)}</span></span></div>
+      ${p.justificacion_prioridad ? `<div class="detail-row" style="grid-column:1/-1"><span class="d-label">Justificación urgencia</span><span class="d-val">${escapeHtml(p.justificacion_prioridad)}</span></div>` : ''}
       <div class="detail-row" style="grid-column:1/-1">
         <span class="d-label">Total</span>
         <span class="d-val" style="font-size:1.2rem;font-weight:700;color:var(--green-dk)">S/ ${parseFloat(p.total).toFixed(2)}</span>
@@ -529,9 +537,9 @@ function verDetalle(cod) {
       const alergStr    = Array.isArray(alergenos) ? alergenos.join(', ') : '';
       return `
       <div class="detail-dish-row">
-        <div class="ddr-name">${nombrePlato}
-          ${alergStr ? `<div class="detail-dish-obs">⚠ Alérgenos: ${alergStr}</div>` : ''}
-          ${d.observacion ? `<div class="detail-dish-obs">📝 ${d.observacion}</div>` : ''}
+        <div class="ddr-name">${escapeHtml(nombrePlato)}
+          ${alergStr ? `<div class="detail-dish-obs">⚠ Alérgenos: ${escapeHtml(alergStr)}</div>` : ''}
+          ${d.observacion ? `<div class="detail-dish-obs">📝 ${escapeHtml(d.observacion)}</div>` : ''}
         </div>
         <div>${d.cantidad}</div>
         <div>S/ ${parseFloat(d.precio_unitario||0).toFixed(2)}</div>

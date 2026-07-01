@@ -10,7 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('filtroPrioridad').addEventListener('change', renderizarTickets);
 
     cargarPedidosCocina();
-    setInterval(cargarPedidosCocina, 15000);
+
+    // ponytail: realtime replaces 15s polling — debounced to batch rapid-fire events
+    let _rt = null;
+    const recargar = () => { clearTimeout(_rt); _rt = setTimeout(cargarPedidosCocina, 300); };
+    window.clienteSupabase
+        .channel('cocina-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, recargar)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pedido_detalle' }, recargar)
+        .subscribe();
 });
 
 /* ==========================================
@@ -76,7 +84,7 @@ function renderizarTickets() {
         const esUrgente = pedido.prioridad === 'Urgente';
         const claseUrgente = esUrgente ? 'prioridad-urgente' : '';
         const justificacionHtml = esUrgente && pedido.justificacion_prioridad
-            ? `<div class="urgente-alerta">⚠ URGENTE: ${pedido.justificacion_prioridad}</div>`
+            ? `<div class="urgente-alerta">⚠ URGENTE: ${escapeHtml(pedido.justificacion_prioridad)}</div>`
             : (esUrgente ? '<div class="urgente-alerta">⚠ URGENTE</div>' : '');
 
         const detalles = pedido.pedido_detalle || [];
@@ -96,19 +104,19 @@ function renderizarTickets() {
             const nombre = d.plato ? d.plato.nombre : 'Plato desconocido';
             const alergenos = d.plato?.alergenos || [];
             const alergStr = Array.isArray(alergenos) ? alergenos.join(', ') : '';
-            const obsHtml = d.observacion ? `<div class="plato-obs">🗣 Nota: ${d.observacion}</div>` : '';
-            const alergenosHtml = alergStr ? `<div class="plato-alergenos"><span>☣ Alérgenos:</span> ${alergStr}</div>` : '';
+            const obsHtml = d.observacion ? `<div class="plato-obs">🗣 Nota: ${escapeHtml(d.observacion)}</div>` : '';
+            const alergenosHtml = alergStr ? `<div class="plato-alergenos"><span>☣ Alérgenos:</span> ${escapeHtml(alergStr)}</div>` : '';
             const estadoPlato = d.estado_cocina || 'Pendiente';
 
             platosHtml += `
                 <li class="plato-item">
                     <div class="plato-header">
-                        <span>${nombre}</span>
+                        <span>${escapeHtml(nombre)}</span>
                         <span class="plato-cant">x${d.cantidad}</span>
                     </div>
                     <div class="plato-control-estado">
                         <select class="select-plato-estado ${estadoPlato.replace(/ /g, '-').toLowerCase()}"
-                                onchange="cambiarEstadoDetalle('${pedido.codigo}', '${d.id}', this.value)">
+                                onchange="cambiarEstadoDetalle('${escapeHtml(pedido.codigo)}', '${escapeHtml(d.id)}', this.value)">
                             <option value="Pendiente" ${estadoPlato === 'Pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
                             <option value="En preparación" ${estadoPlato === 'En preparación' ? 'selected' : ''}>🔥 En preparación</option>
                             <option value="Listo" ${estadoPlato === 'Listo' ? 'selected' : ''}>✅ Listo</option>
@@ -126,14 +134,14 @@ function renderizarTickets() {
 
         if (pedido.estado === 'Enviado a cocina') {
             claseBadge = 'estado-enviado';
-            botonesHtml = `<button class="btn-accion btn-preparar" onclick="cambiarEstadoPedido('${pedido.codigo}', 'En preparación')">Confirmar Inicio de Cocina</button>`;
+            botonesHtml = `<button class="btn-accion btn-preparar" onclick="cambiarEstadoPedido('${escapeHtml(pedido.codigo)}', 'En preparación')">Confirmar Inicio de Cocina</button>`;
         } else if (pedido.estado === 'En preparación') {
             claseBadge = 'estado-preparacion';
             const todosListos = detalles.every(d => d.estado_cocina === 'Listo');
             if (!todosListos) {
                 botonesHtml = `<button class="btn-accion" style="background-color:#ccc;cursor:not-allowed;" disabled>Faltan platos por terminar</button>`;
             } else {
-                botonesHtml = `<button class="btn-accion btn-listo" onclick="cambiarEstadoPedido('${pedido.codigo}', 'Listo para servir')">✓ Todo listo para Servir</button>`;
+                botonesHtml = `<button class="btn-accion btn-listo" onclick="cambiarEstadoPedido('${escapeHtml(pedido.codigo)}', 'Listo para servir')">✓ Todo listo para Servir</button>`;
             }
         } else if (pedido.estado === 'Listo para servir') {
             claseBadge = 'estado-listo';
@@ -144,13 +152,13 @@ function renderizarTickets() {
             <div class="ticket ${claseUrgente}">
                 ${justificacionHtml}
                 <div class="ticket-header">
-                    <h3>${pedido.codigo}</h3>
+                    <h3>${escapeHtml(pedido.codigo)}</h3>
                     <div class="mesa-badge">Mesa ${pedido.mesa}</div>
                 </div>
                 <div class="ticket-info">
-                    <div>🧑‍🍳 Mozo: <strong>${pedido.mozo_nombre || 'N/A'}</strong></div>
+                    <div>🧑‍🍳 Mozo: <strong>${escapeHtml(pedido.mozo_nombre || 'N/A')}</strong></div>
                     <div>⏱ Tiempo aprox: <strong>${tiempoEstimado} min</strong></div>
-                    <div>🚩 Prioridad: <strong>${pedido.prioridad}</strong></div>
+                    <div>🚩 Prioridad: <strong>${escapeHtml(pedido.prioridad)}</strong></div>
                     <div style="grid-column:span 2;">📅 ${fechaAgradable}</div>
                 </div>
                 <div class="ticket-body">${platosHtml}</div>

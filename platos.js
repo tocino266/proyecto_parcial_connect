@@ -228,17 +228,17 @@ function renderizarTabla(platosAMostrar = platos) {
         const badgeClass = plato.estado === 'Activo' ? 'badge activo' : 'badge inactivo';
 
         tr.innerHTML = `
-            <td><strong>${plato.codigo}</strong></td>
-            <td>${plato.nombre}</td>
-            <td>${plato.categoria}</td>
+            <td><strong>${escapeHtml(plato.codigo)}</strong></td>
+            <td>${escapeHtml(plato.nombre)}</td>
+            <td>${escapeHtml(plato.categoria)}</td>
             <td>S/ ${parseFloat(plato.precio).toFixed(2)}</td>
-            <td><span class="${badgeClass}">${plato.estado}</span></td>
+            <td><span class="${badgeClass}">${escapeHtml(plato.estado)}</span></td>
             <td>
-                <button type="button" class="btn-accion btn-editar" onclick="cargarDatosEdicion('${plato.codigo}')">Editar</button>
-                <button type="button" class="btn-accion btn-estado" onclick="cambiarEstado('${plato.codigo}')">
+                <button type="button" class="btn-accion btn-editar" onclick="cargarDatosEdicion('${escapeHtml(plato.codigo)}')">Editar</button>
+                <button type="button" class="btn-accion btn-estado" onclick="cambiarEstado('${escapeHtml(plato.codigo)}')">
                     ${plato.estado === 'Activo' ? 'Desactivar' : 'Activar'}
                 </button>
-                <button type="button" class="btn-accion btn-eliminar" onclick="eliminarPlato('${plato.codigo}')">Eliminar</button>
+                <button type="button" class="btn-accion btn-eliminar" onclick="eliminarPlato('${escapeHtml(plato.codigo)}')">Eliminar</button>
             </td>
         `;
         listaPlatos.appendChild(tr);

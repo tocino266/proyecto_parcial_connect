@@ -222,3 +222,6 @@ async function cambiarEstadoDetalle(codigoPedido, detalleId, nuevoEstado) {
         await cargarPedidosCocina();
     }
 }
+
+
+

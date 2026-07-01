@@ -1,0 +1,17 @@
+{
+	"servers": {
+		"console-ninja": {
+			"command": "powershell.exe",
+			"args": [
+				"node",
+				"$Env:USERPROFILE/.console-ninja/mcp/"
+			],
+			"type": "stdio"
+		},
+		"codebase-memory": {
+			"command": "C:\\codebase-mcp\\codebase-memory-mcp.exe",
+			"type": "stdio"
+		}
+	},
+	"inputs": []
+}

@@ -67,9 +67,9 @@ async function buscarPedidosMesa() {
         return;
     }
 
-    const aunEnCocina = data.some(p => p.estado === 'Enviado a cocina' || p.estado === 'En preparación');
-    if (aunEnCocina) {
-        alert("❌ No se puede facturar: Hay pedidos aún en Cocina. Espera a que estén listos.");
+    const noEntregados = data.some(p => p.estado !== 'Entregado');
+    if (noEntregados) {
+        alert("❌ No se puede facturar: Todos los pedidos activos de la mesa deben estar 'Entregados'. (Aún hay pedidos en preparación o sin entregar)");
         resumenConsumo.classList.add('hidden');
         return;
     }

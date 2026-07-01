@@ -48,25 +48,25 @@ CREATE POLICY "platos: autenticados pueden leer"
 ON public.platos FOR SELECT TO authenticated
 USING (true);
 
--- Solo Administrador puede crear platos
-CREATE POLICY "platos: solo admin puede insertar"
+-- Mozo y Administrador pueden crear platos
+CREATE POLICY "platos: mozo y admin pueden insertar"
 ON public.platos FOR INSERT TO authenticated
 WITH CHECK (
-  (auth.jwt() -> 'user_metadata' ->> 'rol') = 'Administrador'
+  (auth.jwt() -> 'user_metadata' ->> 'rol') IN ('Mozo', 'Administrador')
 );
 
--- Solo Administrador puede editar platos
-CREATE POLICY "platos: solo admin puede actualizar"
+-- Mozo y Administrador pueden editar platos
+CREATE POLICY "platos: mozo y admin pueden actualizar"
 ON public.platos FOR UPDATE TO authenticated
 USING (
-  (auth.jwt() -> 'user_metadata' ->> 'rol') = 'Administrador'
+  (auth.jwt() -> 'user_metadata' ->> 'rol') IN ('Mozo', 'Administrador')
 );
 
--- Solo Administrador puede eliminar platos
-CREATE POLICY "platos: solo admin puede eliminar"
+-- Mozo y Administrador pueden eliminar platos
+CREATE POLICY "platos: mozo y admin pueden eliminar"
 ON public.platos FOR DELETE TO authenticated
 USING (
-  (auth.jwt() -> 'user_metadata' ->> 'rol') = 'Administrador'
+  (auth.jwt() -> 'user_metadata' ->> 'rol') IN ('Mozo', 'Administrador')
 );
 
 -- =========================
@@ -156,11 +156,11 @@ USING (
 -- ============================================================
 -- Resumen de permisos:
 --
--- | Tabla           | SELECT | INSERT         | UPDATE | DELETE |
--- |-----------------|--------|----------------|--------|--------|
--- | platos          | Todos  | Admin          | Admin  | Admin  |
--- | pedidos         | Todos  | Mozo, Admin    | Todos  | Admin  |
--- | pedido_detalle  | Todos  | Mozo, Admin    | Todos  | Admin  |
--- | facturas        | Todos  | Caja, Admin    | —      | Admin  |
+-- | Tabla           | SELECT | INSERT         | UPDATE         | DELETE         |
+-- |-----------------|--------|----------------|----------------|----------------|
+-- | platos          | Todos  | Mozo, Admin    | Mozo, Admin    | Mozo, Admin    |
+-- | pedidos         | Todos  | Mozo, Admin    | Todos          | Admin          |
+-- | pedido_detalle  | Todos  | Mozo, Admin    | Todos          | Admin          |
+-- | facturas        | Todos  | Caja, Admin    | —              | Admin          |
 -- | usuarios_perfil | Propio | Propio         | Propio | —      |
 -- ============================================================

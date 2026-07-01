@@ -110,6 +110,8 @@ async function manejarSubmit(e) {
     document.getElementById('error-codigo').textContent = '';
     document.getElementById('error-nombre').textContent = '';
     document.getElementById('error-alergenos').textContent = '';
+    document.getElementById('error-precio').textContent = '';
+    document.getElementById('error-tiempo').textContent = '';
 
     // Validaciones
     if (alergenos.length === 0) {
@@ -123,13 +125,13 @@ async function manejarSubmit(e) {
         return;
     }
 
-    if (precio < 0) {
-        document.getElementById('error-codigo').textContent = 'El precio no puede ser negativo.';
+    if (precio <= 0) {
+        document.getElementById('error-precio').textContent = 'El precio debe ser mayor a 0 y no negativo.';
         return;
     }
 
-    if (!tiempo_preparacion || tiempo_preparacion < 1) {
-        document.getElementById('error-codigo').textContent = 'El tiempo de preparación debe ser al menos 1 minuto.';
+    if (!tiempo_preparacion || tiempo_preparacion < 1 || tiempo_preparacion > 120) {
+        document.getElementById('error-tiempo').textContent = 'El tiempo de preparación debe estar entre 1 y 120 minutos.';
         return;
     }
 
@@ -152,22 +154,14 @@ async function manejarSubmit(e) {
         }
     }
 
-    // Obtener el ID del perfil en usuarios_perfil (no el auth user id directamente)
-    let creadoPorId = null;
+    // creado_por referencia auth.users(id), usar el auth user id directamente
     const usuario = await window.obtenerUsuarioActual();
-    if (usuario) {
-        const { data: perfil } = await window.clienteSupabase
-            .from('usuarios_perfil')
-            .select('id')
-            .eq('user_id', usuario.id)
-            .maybeSingle();
-        if (perfil) creadoPorId = perfil.id;
-    }
+    const creadoPorId = usuario ? usuario.id : null;
 
     const platoData = {
         codigo, nombre, descripcion, categoria,
-        precio, tiempo_preparacion, estado, alergenos,
-        ingredientes_modificables,
+        precio, tiempo: tiempo_preparacion, estado, alergenos,
+        modificables: ingredientes_modificables,
         creado_por: creadoPorId
     };
 
@@ -316,6 +310,8 @@ function cancelarEdicion() {
     document.getElementById('error-codigo').textContent = '';
     document.getElementById('error-nombre').textContent = '';
     document.getElementById('error-alergenos').textContent = '';
+    document.getElementById('error-precio').textContent = '';
+    document.getElementById('error-tiempo').textContent = '';
 
     btnGuardar.textContent = 'Guardar Plato';
     btnCancelar.style.display = 'none';

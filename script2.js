@@ -248,7 +248,9 @@ function validarFormulario() {
     showErr('mesa', 'Ingresa una mesa válida (1-50).'); ok = false;
   } else {
     const mesaOcupada = pedidos.some(p => p.mesa === mesa && ['Registrado','Enviado a cocina','En preparación','Listo para servir'].includes(p.estado));
-    if (mesaOcupada) { showErr('mesa', '¡Esta mesa ya tiene un pedido en curso!'); ok = false; }
+    if (mesaOcupada) { 
+        toast('Nota: Registrando pedido adicional para una mesa ya ocupada.', false); 
+    }
   }
 
   if (!prioridadSel) { showErr('prioridad', 'Selecciona un nivel de prioridad.'); ok = false; }
